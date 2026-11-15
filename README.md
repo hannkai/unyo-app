@@ -1,5 +1,8 @@
 鉄道編成管理アプリ（Rail Formation Manager）
 
+■ アプリの起動はこちら
+<a href="rail_formation_manager.html"アプリ起動</a>
+
 ■ ファイル
 - rail_formation_manager.html : アプリ本体。ブラウザで開いて使用します。
 - rail_formation_database.json : 空のデータベースファイル。初回の読み込み用です。
@@ -46,3 +49,9 @@
 - 既存IDとの重複時は「スキップ」が初期設定です。「更新」を選ぶと同じIDのデータをCSV内容で置き換えます。
 - CSV IDはデータベースに保存され、JSONの保存・読み込み後も保持されます。記入例の車両形式・編成名は説明用の架空データです。
 - CSV登録は既存データを無条件に削除せず、検証がすべて通った場合にのみ一括反映します。
+
+■CSVテンプレート・記入例
+<a href="編成マスターテンプレート.csv" download>編成マスターテンプレート</a><br>
+<a href="編成マスター記入例.csv" download>編成マスター記入例</a><br>
+<a href="運用編成テンプレート.csv" download>運用編成テンプレート</a><br>
+<a href="運用編成記入例.csv" download>運用編成記入例</a>
