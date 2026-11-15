@@ -1,7 +1,7 @@
 鉄道編成管理アプリ（Rail Formation Manager）
 
 ■ アプリの起動はこちら
-<a href="rail_formation_manager.html"アプリ起動</a>
+<a href="rail_formation_manager.html">アプリ起動</a>
 
 ■ ファイル
 - rail_formation_manager.html : アプリ本体。ブラウザで開いて使用します。
