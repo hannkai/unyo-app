@@ -55,3 +55,6 @@
 <a href="編成マスター記入例.csv" download>編成マスター記入例</a><br>
 <a href="運用編成テンプレート.csv" download>運用編成テンプレート</a><br>
 <a href="運用編成記入例.csv" download>運用編成記入例</a>
+
+■アプリのダウンロード(zipファイル)<br>
+<a href="rail_formation_manager_package.zip" download>アプリダウンロード</a>
