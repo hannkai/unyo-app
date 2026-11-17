@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101d2b">
+<title>Rail Formation Manager v1.3 | 鉄道編成管理</title>
+<style>
+:root{
+  --bg:#edf1f5;--surface:#fff;--surface-2:#f6f8fa;--ink:#172536;--muted:#6d7b8b;
+  --line:#dce3ea;--navy:#10263b;--navy-2:#183b58;--blue:#2a719d;--blue-soft:#e8f2f8;
+  --teal:#2d8b83;--teal-soft:#e7f4f1;--amber:#b57b2a;--amber-soft:#fbf3e6;
+  --red:#b94b4b;--red-soft:#fbeeee;--shadow:0 10px 28px rgba(20,42,62,.08);--radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;font-size:14px;line-height:1.55}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app-shell{min-height:100vh}
+.topbar{height:74px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 30px;gap:18px;position:sticky;top:0;z-index:20;box-shadow:0 4px 18px rgba(9,25,40,.2)}
+.brand{display:flex;align-items:center;gap:13px;min-width:245px}
+.brand-mark{width:39px;height:39px;border:1px solid rgba(255,255,255,.25);border-radius:11px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
+.brand-mark svg{width:24px;height:24px}
+.brand-title{font-size:16px;font-weight:800;letter-spacing:.06em;line-height:1.15}
+.brand-sub{font-size:10px;color:#a9bece;letter-spacing:.17em;margin-top:4px}
+.top-actions{display:flex;align-items:center;gap:9px}
+.db-state{font-size:11px;color:#c8d7e2;display:flex;align-items:center;gap:7px;margin-right:10px;white-space:nowrap}
+.db-dot{width:7px;height:7px;border-radius:50%;background:#63c6a7;box-shadow:0 0 0 4px rgba(99,198,167,.13)}
+.btn{border:1px solid transparent;border-radius:9px;padding:9px 14px;font-weight:700;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.16s ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);filter:brightness(.98)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--blue);color:white;box-shadow:0 3px 8px rgba(42,113,157,.18)}
+.btn-light{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:white}
+.btn-outline{background:white;border-color:var(--line);color:var(--ink)}
+.btn-soft{background:var(--blue-soft);color:var(--blue)}
+.btn-danger{background:var(--red-soft);color:var(--red)}
+.btn-small{padding:6px 10px;font-size:11px}
+.btn-icon{width:32px;height:32px;padding:0;border:1px solid var(--line);background:white;color:#667687;border-radius:8px}
+.layout{display:grid;grid-template-columns:235px minmax(0,1fr);max-width:1680px;margin:0 auto;min-height:calc(100vh - 74px)}
+.sidebar{background:#f8fafc;border-right:1px solid var(--line);padding:27px 16px 22px;display:flex;flex-direction:column;gap:27px}
+.side-label{font-size:10px;letter-spacing:.16em;color:#93a0ad;font-weight:800;padding:0 12px;margin-bottom:8px}
+.nav-group{display:grid;gap:5px}
+.nav-item{border:0;background:transparent;color:#5b6b7b;width:100%;padding:12px 13px;border-radius:10px;display:flex;align-items:center;gap:12px;text-align:left;font-weight:700;font-size:13px;transition:.15s}
+.nav-item:hover{background:#edf2f6;color:var(--ink)}
+.nav-item.active{background:#e4eef5;color:#174c70;box-shadow:inset 3px 0 #2a719d}
+.nav-icon{width:20px;height:20px;display:grid;place-items:center;font-size:16px}
+.nav-count{margin-left:auto;background:#e7edf2;color:#647486;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:800}
+.nav-item.active .nav-count{background:#fff;color:var(--blue)}
+.sidebar-card{margin-top:auto;background:linear-gradient(145deg,#15364f,#10263b);border-radius:13px;padding:16px;color:#d5e1e9}
+.sidebar-card-title{font-size:11px;font-weight:800;letter-spacing:.06em;margin-bottom:8px;color:white}
+.sidebar-card p{font-size:10px;color:#afc1ce;line-height:1.7;margin:0}
+.main{padding:31px 34px 50px;min-width:0}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:23px}
+.eyebrow{font-size:10px;letter-spacing:.17em;color:var(--blue);font-weight:900;margin-bottom:7px}
+h1{font-size:27px;line-height:1.2;letter-spacing:-.035em;margin:0;color:#17293b}
+.page-description{color:var(--muted);font-size:12px;margin-top:8px}
+.head-actions{display:flex;gap:8px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px 18px;display:flex;align-items:center;gap:13px;min-height:78px}
+.stat-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:#edf3f7;color:var(--blue)}
+.stat-card:nth-child(2) .stat-icon{background:var(--teal-soft);color:var(--teal)}
+.stat-card:nth-child(3) .stat-icon{background:var(--amber-soft);color:var(--amber)}
+.stat-label{font-size:10px;color:var(--muted);font-weight:700}
+.stat-value{font-size:22px;line-height:1.2;font-weight:850;letter-spacing:-.04em;margin-top:2px}
+.stat-unit{font-size:10px;color:#8090a0;margin-left:4px;font-weight:600}
+.filter-bar{display:flex;align-items:center;gap:9px;padding:13px;background:#fff;border:1px solid var(--line);border-radius:13px;margin-bottom:17px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:190px}
+.search-wrap .search-symbol{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#8795a3;font-size:15px}
+.search-input{width:100%;height:37px;padding:0 12px 0 36px;border:1px solid var(--line);background:#fbfcfd;border-radius:8px;outline:none;color:var(--ink)}
+.search-input:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:#75a6c2;box-shadow:0 0 0 3px rgba(42,113,157,.1);background:white}
+.filter-select{height:37px;border:1px solid var(--line);background:#fbfcfd;border-radius:8px;padding:0 30px 0 11px;color:#526273;min-width:145px;outline:none}
+.result-count{font-size:11px;color:#7e8d9b;white-space:nowrap;margin-left:auto;padding:0 5px}
+.section-caption{font-size:11px;color:#80909f;font-weight:800;letter-spacing:.09em;margin:19px 2px 10px;text-transform:uppercase}
+.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.formation-card,.operation-card{background:white;border:1px solid var(--line);border-radius:14px;padding:17px 18px 15px;box-shadow:0 2px 6px rgba(24,45,64,.025);min-width:0;transition:.16s}
+.formation-card:hover,.operation-card:hover{box-shadow:var(--shadow);border-color:#c8d6e1;transform:translateY(-1px)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.card-title{font-size:16px;font-weight:850;letter-spacing:-.02em;margin:0;line-height:1.35;overflow-wrap:anywhere}
+.card-subtitle{font-size:11px;color:#8090a0;margin-top:5px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:30px;padding:4px 9px;font-size:10px;font-weight:800;white-space:nowrap;background:#edf2f6;color:#607182}
+.pill-blue{background:var(--blue-soft);color:#2a719d}
+.pill-teal{background:var(--teal-soft);color:#277a72}
+.pill-amber{background:var(--amber-soft);color:#94631f}
+.card-divider{height:1px;background:#edf0f3;margin:14px 0 12px}
+.card-meta{display:flex;gap:13px;flex-wrap:wrap;color:#657586;font-size:11px;margin:9px 0 0}
+.meta-item{display:flex;align-items:center;gap:5px}
+.vehicle-strip{display:flex;align-items:stretch;gap:5px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:thin}
+.vehicle-chip{flex:0 0 auto;min-width:62px;border:1px solid #dce5eb;background:#f8fafb;border-radius:7px;padding:7px 8px;text-align:center}
+.vehicle-chip .car-order{display:block;font-size:9px;color:#9aa7b3;margin-bottom:2px}
+.vehicle-chip .car-format{display:block;font-size:11px;font-weight:850;color:#324b60;white-space:nowrap}
+.vehicle-chip .car-number{display:block;font-size:9px;color:#8493a1;margin-top:2px;white-space:nowrap}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.card-date{font-size:10px;color:#9aa5af}
+.card-actions{display:flex;gap:6px}
+.empty-state{background:#fff;border:1px dashed #cbd6df;border-radius:15px;padding:46px 20px;text-align:center;grid-column:1/-1}
+.empty-icon{width:50px;height:50px;border-radius:15px;background:#edf3f7;color:#5885a1;display:grid;place-items:center;font-size:23px;margin:0 auto 13px}
+.empty-state h3{margin:0 0 6px;font-size:15px}
+.empty-state p{color:#80909f;font-size:11px;margin:0 0 15px}
+.op-units{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:2px 0 7px}
+.op-unit{border:1px solid #dce7e5;background:#f4faf8;border-radius:8px;padding:8px 10px;min-width:104px;flex:0 0 auto}
+.op-unit strong{display:block;color:#286c66;font-size:11px;white-space:nowrap}
+.op-unit small{display:block;color:#7d9691;font-size:9px;margin-top:2px}
+.op-plus{color:#a0aeb8;font-weight:800;font-size:13px;flex:0 0 auto}
+.line-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.line-tag{font-size:10px;color:#536f82;background:#eff4f7;padding:4px 8px;border-radius:5px}
+.hidden{display:none!important}
+.toast{position:fixed;right:24px;bottom:23px;background:#19364d;color:white;padding:12px 16px;border-radius:10px;box-shadow:0 8px 25px rgba(10,28,44,.22);font-size:12px;z-index:100;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
+.toast.show{opacity:1;transform:translateY(0)}
+.dialog{border:0;padding:0;border-radius:16px;width:min(700px,calc(100vw - 28px));max-height:calc(100vh - 35px);box-shadow:0 24px 80px rgba(9,25,40,.28);overflow:hidden;color:var(--ink)}
+.dialog::backdrop{background:rgba(10,26,41,.55);backdrop-filter:blur(3px)}
+.dialog-header{background:var(--navy);color:white;padding:19px 23px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.dialog-header h2{font-size:17px;margin:0;font-weight:850}
+.dialog-header p{font-size:10px;color:#b5c7d4;margin:4px 0 0}
+.dialog-close{border:0;background:rgba(255,255,255,.11);color:white;width:30px;height:30px;border-radius:8px;font-size:18px;line-height:1}
+.dialog-body{padding:22px 23px 18px;overflow-y:auto;max-height:calc(100vh - 160px)}
+.dialog-footer{padding:14px 23px 19px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:#fbfcfd}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:800;color:#4b5d6d}
+.field label .optional{font-weight:500;color:#98a4af;margin-left:5px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:#fbfcfd;border-radius:8px;padding:10px 11px;outline:none;color:var(--ink);min-height:39px}
+.field textarea{resize:vertical;min-height:75px}
+.helper{font-size:10px;color:#91a0ac;line-height:1.55}
+.form-section-title{font-size:11px;font-weight:900;color:#2d4356;letter-spacing:.08em;margin:22px 0 9px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.form-section-title:first-child{margin-top:0}
+.vehicle-editor{display:grid;gap:7px}
+.vehicle-edit-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1fr) 34px;gap:7px;align-items:center}
+.row-number{width:29px;height:29px;display:grid;place-items:center;border-radius:8px;background:#edf3f7;color:#4b718a;font-size:10px;font-weight:850}
+.vehicle-edit-row input{width:100%;height:36px;border:1px solid var(--line);border-radius:7px;padding:0 9px;outline:none;min-width:0}
+.vehicle-edit-row input:focus{border-color:#75a6c2;box-shadow:0 0 0 3px rgba(42,113,157,.1)}
+.remove-row{height:32px;width:32px;border:0;background:#f9eeee;color:#b45a5a;border-radius:7px;font-size:16px}
+.add-row-btn{margin-top:8px}
+.unit-builder{border:1px solid var(--line);background:#f8fafb;border-radius:10px;padding:12px}
+.add-unit-row{display:flex;gap:8px}
+.add-unit-row select{flex:1;min-width:0;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 9px;background:white;color:var(--ink)}
+.selected-units{display:grid;gap:7px;margin-top:12px}
+.selected-unit{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;align-items:center;background:white;border:1px solid #dce5eb;border-radius:8px;padding:8px 9px}
+.unit-index{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#e8f3f0;color:#28776f;font-size:10px;font-weight:900}
+.selected-unit strong{display:block;font-size:11px;color:#314c60}
+.selected-unit small{display:block;color:#82919e;font-size:9px;margin-top:1px}
+.unit-actions{display:flex;gap:4px}
+.selected-unit .btn-icon{width:27px;height:27px;font-size:12px}
+.no-units{padding:14px;text-align:center;color:#91a0ac;font-size:10px;border:1px dashed #d5dfe6;border-radius:8px;background:rgba(255,255,255,.55)}
+.form-warning{padding:10px 12px;background:#fbf4e8;border-radius:8px;color:#8c672f;font-size:10px;margin-top:12px;line-height:1.6}
+.db-info{padding:13px;background:#f2f6f8;border-radius:9px;font-size:11px;color:#647586;line-height:1.7}
+.csv-dialog{width:min(920px,calc(100vw - 24px))}
+.csv-template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}
+.csv-template-card{border:1px solid var(--line);border-radius:10px;background:#fbfcfd;padding:13px;min-width:0}
+.csv-template-card strong{display:block;font-size:12px;color:#334d61;margin-bottom:4px}
+.csv-template-card p{font-size:10px;color:#7f8e9c;margin:0 0 10px;line-height:1.6}
+.csv-template-actions{display:flex;gap:6px;flex-wrap:wrap}
+.csv-upload-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,220px);gap:12px;align-items:end;margin-top:15px}
+.csv-upload-row input[type=file]{width:100%;border:1px solid var(--line);background:#fbfcfd;padding:9px;border-radius:8px;font-size:11px;min-height:39px}
+.csv-upload-row select{width:100%;height:39px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fbfcfd;color:var(--ink)}
+.csv-help{padding:11px 13px;background:#eef4f7;border-radius:9px;color:#5f7485;font-size:10px;line-height:1.7;margin:12px 0}
+.csv-summary{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0 8px}
+.csv-summary span{background:#eef3f6;color:#536d80;border-radius:7px;padding:6px 9px;font-size:10px;font-weight:800}
+.csv-errors{border:1px solid #e9caca;background:#fff7f7;border-radius:9px;padding:12px 14px;margin-top:12px;color:#984949;font-size:11px}
+.csv-errors h3{font-size:12px;margin:0 0 7px}
+.csv-errors ul{margin:0;padding-left:20px;max-height:170px;overflow:auto}
+.csv-errors li{margin:3px 0;line-height:1.5}
+.csv-preview{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:12px}
+.csv-preview-head{padding:10px 12px;background:#f5f8fa;font-size:11px;font-weight:850;color:#425a6e}
+.csv-preview-scroll{overflow:auto;max-height:260px}
+.csv-preview table{border-collapse:collapse;width:100%;font-size:10px;white-space:nowrap}
+.csv-preview th,.csv-preview td{padding:8px 10px;text-align:left;border-top:1px solid #edf1f4}
+.csv-preview th{background:#fbfcfd;color:#7a8996;font-weight:800;position:sticky;top:0}
+.csv-empty{font-size:11px;color:#8a98a5;padding:14px}
+.csv-status{font-size:10px;color:#758797;margin-top:8px;min-height:16px}
+.formation-external-id{font-size:9px;color:#8797a5;margin-top:3px;overflow-wrap:anywhere}
+@media(max-width:760px){.csv-template-grid{grid-template-columns:1fr}.csv-upload-row{grid-template-columns:1fr}.csv-dialog .dialog-footer{flex-wrap:wrap}.csv-dialog .dialog-footer button{flex:1}}
+@media(max-width:1050px){.layout{grid-template-columns:190px minmax(0,1fr)}.main{padding:27px 23px 40px}.card-grid{grid-template-columns:1fr}.topbar{padding:0 22px}}
+@media(max-width:760px){.topbar{height:auto;min-height:68px;padding:12px 15px;align-items:flex-start}.brand{min-width:0}.brand-title{font-size:14px}.brand-sub{font-size:9px}.top-actions{gap:6px;flex-wrap:wrap;justify-content:flex-end}.db-state{display:none}.top-actions .btn{padding:8px 9px;font-size:10px}.layout{display:block;min-height:calc(100vh - 68px)}.sidebar{position:sticky;top:68px;z-index:15;padding:8px 12px;border-right:0;border-bottom:1px solid var(--line);display:block;background:rgba(248,250,252,.96);backdrop-filter:blur(8px)}.sidebar .side-label,.sidebar-card{display:none}.nav-group{display:flex;gap:6px}.nav-item{justify-content:center;padding:9px 10px;font-size:11px;gap:6px}.nav-icon{font-size:14px;width:auto}.nav-count{margin-left:2px}.main{padding:22px 14px 35px}.page-head{align-items:flex-start;margin-bottom:18px;flex-direction:column}.page-head h1{font-size:23px}.head-actions{width:100%}.head-actions .btn{flex:1}.stats{gap:7px}.stat-card{padding:11px 9px;gap:7px;min-height:67px}.stat-icon{width:29px;height:29px;font-size:14px;border-radius:8px}.stat-label{font-size:9px}.stat-value{font-size:18px}.stat-unit{font-size:9px}.filter-bar{padding:9px;gap:7px}.search-wrap{flex-basis:100%}.filter-select{flex:1;min-width:0;font-size:11px}.result-count{width:100%;text-align:right}.card-grid{gap:10px}.formation-card,.operation-card{padding:14px}.card-title{font-size:14px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.dialog-body{padding:17px 15px}.dialog-header{padding:16px}.dialog-footer{padding:12px 15px}.vehicle-edit-row{grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) 30px;gap:5px}.vehicle-edit-row input{font-size:11px;padding:0 6px}.row-number{width:25px;height:25px}.remove-row{width:29px;height:30px}.dialog{max-height:calc(100vh - 18px)}.dialog-body{max-height:calc(100vh - 142px)}}
+@media(max-width:390px){.brand-mark{width:33px;height:33px}.brand{gap:8px}.top-actions .btn{padding:7px 7px}.stats{grid-template-columns:1fr 1fr}.stat-card:nth-child(3){grid-column:1/-1}.nav-item{font-size:10px;padding:8px 7px}.nav-icon{display:none}}
+
+/* 追加UI：コピー、表示切替、専用画像出力 */
+.view-control{display:inline-flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:9px;background:#fbfcfd;white-space:nowrap}
+.view-control>span{font-size:10px;color:#82919e;font-weight:800;padding:0 5px}
+.view-choice{border:0;background:transparent;color:#657687;border-radius:6px;padding:6px 8px;font-size:10px;font-weight:800}
+.view-choice[aria-pressed="true"]{background:#e3eef5;color:#215b7c;box-shadow:0 1px 3px rgba(20,45,65,.1)}
+.card-grid.one-column{grid-template-columns:1fr}
+.card-grid.two-column{grid-template-columns:repeat(2,minmax(0,1fr))}
+.copy-source-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;margin-bottom:17px;border:1px solid #dce7ed;background:#f5f9fb;border-radius:10px}
+.copy-source-row .btn{min-height:39px}
+.auto-name-option{display:flex!important;flex-direction:row!important;align-items:center;gap:7px;font-size:10px!important;font-weight:600!important;color:#557184!important;margin-top:2px}
+.auto-name-option input{width:15px!important;min-height:15px!important;height:15px;margin:0;accent-color:#2a719d}
+.op-car-groups{display:flex;align-items:stretch;gap:6px;overflow-x:auto;padding:2px 1px 9px}
+.op-car-group{flex:0 0 auto;min-width:180px;max-width:100%;border:2px solid #8bb8b0;border-radius:10px;background:#f5faf8;padding:8px 8px 2px}
+.op-car-group.missing{border-color:#dfb4a4;background:#fff8f5;padding:10px;color:#95634d;font-size:10px}
+.op-car-group-head{display:flex;flex-direction:column;gap:2px;margin:0 1px 6px}
+.op-car-group-head strong{font-size:10px;color:#276e66;white-space:nowrap}
+.op-car-group-head small{font-size:9px;color:#7b9690;white-space:nowrap}
+.image-export-dialog{width:min(1280px,calc(100vw - 28px));max-width:1280px}
+.image-export-dialog[open]{display:flex;flex-direction:column}
+.export-toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:13px 20px;border-bottom:1px solid var(--line);background:#f8fafb}
+.export-scope{font-size:11px;font-weight:850;color:#40596d;margin-right:auto;padding-bottom:9px}
+.export-mode-field,.export-format-field{min-width:130px;gap:4px}
+.export-mode-field label,.export-format-field label{font-size:10px;font-weight:800;color:#5b6e7e}
+.export-mode-field select,.export-format-field select{height:36px;border:1px solid var(--line);border-radius:8px;padding:0 28px 0 10px;background:white;color:var(--ink)}
+.export-hint{font-size:10px;color:#657d8e;padding:9px 20px;background:#edf4f7}
+.export-preview-wrap{padding:16px;background:#e8edf1;overflow:auto;max-height:calc(100vh - 245px);min-height:220px;flex:1 1 auto}
+.export-preview{width:max-content;min-width:100%;margin:0 auto}
+.export-sheet{display:inline-block;background:#fff;padding:30px 34px 34px;box-shadow:0 4px 18px rgba(24,45,64,.12);color:#21384b}
+.export-sheet-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;padding-bottom:17px;margin-bottom:14px;border-bottom:2px solid #1b3e56}
+.export-sheet-heading h3{font-size:19px;margin:0;font-weight:900;letter-spacing:.02em}
+.export-sheet-heading p{margin:4px 0 0;color:#8795a1;font-size:9px;letter-spacing:.1em}
+.export-sheet-heading>span{font-size:12px;font-weight:850;color:#47738c;white-space:nowrap}
+.export-rows{display:grid;gap:8px}
+.export-row{display:flex;align-items:stretch;gap:18px;min-height:102px;padding:7px 0 11px;border-bottom:1px solid #e5ebef;width:max-content;min-width:100%}
+.export-meta{flex:0 0 230px;width:230px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:10px 13px;border:1px solid #dce4e9;border-left:4px solid #3e7898;background:#f6f8fa;border-radius:7px;overflow:hidden}
+.export-meta strong{font-size:13px;font-weight:900;color:#20394e;overflow-wrap:anywhere}
+.export-meta span{font-size:10px;color:#607687;overflow-wrap:anywhere}
+.export-meta small{font-size:9px;color:#8695a1;overflow-wrap:anywhere}
+.export-consist{display:flex;align-items:center;gap:5px;min-height:82px;padding:2px 0;white-space:nowrap}
+.export-car{flex:0 0 100px;width:100px;height:66px;border:1px solid #aebfc9;border-radius:6px;background:linear-gradient(180deg,#fbfcfd,#f0f4f6);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;position:relative}
+.export-car:after{content:"";position:absolute;width:5px;height:3px;right:-5px;bottom:12px;background:#91a3ae}
+.export-car small{font-size:8px;color:#94a2ad}
+.export-car strong{font-size:10px;color:#2c485d;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.export-car span{font-size:9px;color:#768895;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.export-unit{flex:0 0 auto;border:2px solid #80aaa3;border-radius:8px;background:#f0f7f5;min-height:77px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden}
+.export-unit-head{font-size:8px;color:#4a8179;font-weight:850}
+.export-unit strong{font-size:11px;color:#28544f;white-space:nowrap}
+.export-unit span{font-size:9px;color:#718984;white-space:nowrap}
+.export-unit b{font-size:10px;color:#2d8175}
+.export-unit.formation-mode{position:relative}
+.export-unit.formation-mode:after{content:"";height:5px;position:absolute;bottom:7px;left:10px;right:10px;background:repeating-linear-gradient(90deg,#a6c8c2 0 12px,transparent 12px 16px);border-radius:3px}
+.export-unit.car-mode{padding:6px 7px;gap:3px;min-height:94px;border-width:3px}
+.export-unit-cars{display:flex;gap:4px;align-items:center}
+.export-unit-cars .export-car{flex-basis:88px;width:88px;height:58px}
+.export-coupler{font-size:13px;font-weight:900;color:#8295a3;align-self:center}
+.export-no-cars{font-size:10px;color:#9aa7b1;padding:20px}
+.export-empty{padding:65px 35px;text-align:center;background:white;border:1px dashed #c5d1da;border-radius:10px;color:#82919e;font-size:12px}
+@media(max-width:1050px){.card-grid.two-column{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+  .card-grid.two-column{grid-template-columns:1fr}
+  .copy-source-row{grid-template-columns:1fr}
+  .copy-source-row .btn{width:100%}
+  .view-control{flex:1;justify-content:center}
+  .view-control>span{display:none}
+  .view-choice[data-grid-layout$=":two"]{display:none}
+  .image-export-dialog{width:calc(100vw - 12px);max-height:calc(100vh - 10px)}
+  .export-toolbar{padding:10px;gap:7px}
+  .export-scope{flex-basis:100%;padding-bottom:0}
+  .export-toolbar .btn{flex:1}
+  .export-preview-wrap{padding:8px;max-height:calc(100vh - 260px)}
+  .export-sheet{padding:20px}
+  .export-meta{flex-basis:180px;width:180px}
+}
+
+
+/* v1.3: data label, CSV export, sorting, multi selection and batch creation */
+.dataset-name-row{display:flex;align-items:center;gap:12px;padding:11px 14px;margin:-9px 0 18px;background:#fff;border:1px solid var(--line);border-radius:11px}
+.dataset-name-row label{flex:0 0 auto;font-size:11px;font-weight:800;color:#5b6e7e}
+.dataset-name-row input{flex:1;min-width:0;height:35px;border:1px solid var(--line);border-radius:8px;padding:0 11px;background:#fbfcfd;color:var(--ink);outline:none}
+.dataset-name-row input:focus{border-color:#75a6c2;box-shadow:0 0 0 3px rgba(42,113,157,.1);background:white}
+.sort-direction{min-width:88px}
+.bulk-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 12px;margin:0 0 12px;background:#f7f9fb;border:1px solid var(--line);border-radius:10px}
+.bulk-toolbar>label{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:750;color:#52687a}
+.bulk-toolbar input[type=checkbox],.formation-select input,.operation-select input,.bulk-field-toggle input{accent-color:#2a719d}
+.bulk-toolbar>span{font-size:10px;color:#80909f;margin-right:auto}
+.bulk-toolbar>div{display:flex;gap:6px}
+.card-select{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#718394;white-space:nowrap;margin-right:4px}
+.card-select input{width:16px;height:16px;margin:0;accent-color:#2a719d}
+.batch-add-panel{margin-top:18px;padding:13px;background:#f4f8fa;border:1px solid #dce7ed;border-radius:10px}
+.batch-add-panel .field{max-width:300px}
+.bulk-field-toggle{display:flex!important;align-items:center;gap:8px!important;font-weight:800!important;margin-bottom:7px!important}
+.bulk-field-toggle input{width:16px!important;height:16px!important;min-height:16px!important;margin:0}
+@media(max-width:760px){.dataset-name-row{align-items:stretch;flex-direction:column;gap:6px}.bulk-toolbar{gap:7px}.bulk-toolbar>span{margin-right:0}.bulk-toolbar>div{width:100%}.bulk-toolbar>div .btn{flex:1}.sort-direction{min-width:72px}}
+.export-dataset-name{font-size:12px!important;color:#42647b!important;font-weight:850;letter-spacing:.04em;margin-top:6px!important}
+
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.8" width="14" height="16" rx="3"/><path d="M8 7h8M8 11h2m4 0h2M8 19l-2 2m10-2 2 2M8 16h8"/><path d="M8.5 4.8h7"/></svg></div>
+      <div><div class="brand-title">RAIL FORMATION MANAGER</div><div class="brand-sub">鉄道編成管理システム v1.3</div></div>
+    </div>
+    <div class="top-actions">
+      <div class="db-state"><span class="db-dot"></span><span id="dbStatus">ブラウザに自動保存中</span></div>
+      <button class="btn btn-light" id="openDbBtn" type="button">▱ データを開く</button>
+      <button class="btn btn-light" id="csvImportOpenBtn" type="button">⇧ CSV一括登録</button>
+      <button class="btn btn-light" id="csvExportOpenBtn" type="button">⇩ CSV出力</button>
+      <button class="btn btn-primary" id="saveDbBtn" type="button">↓ データベースを保存</button>
+      <input id="importFile" type="file" accept=".json,application/json,.txt,text/plain" class="hidden">
+    </div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <div>
+        <div class="side-label">DATABASE</div>
+        <div class="nav-group">
+          <button class="nav-item active" data-view="master" type="button"><span class="nav-icon">▤</span><span>編成マスター</span><span class="nav-count" id="masterNavCount">0</span></button>
+          <button class="nav-item" data-view="operations" type="button"><span class="nav-icon">⇄</span><span>運用編成</span><span class="nav-count" id="operationNavCount">0</span></button>
+        </div>
+      </div>
+      <div class="sidebar-card"><div class="sidebar-card-title">データの管理について</div><p>編成マスターを基礎データとして登録し、運用編成ではマスターを組み合わせて実際の列車編成を管理します。変更内容は相互に反映されます。</p></div>
+    </aside>
+    <main class="main">
+      <section id="masterView" class="view">
+        <div class="page-head">
+          <div><div class="eyebrow">MASTER DATA / 01</div><h1>編成マスター</h1><div class="page-description">車両形式と連結順序を登録し、車両区ごとに編成を整理します。</div></div>
+          <div class="head-actions"><button class="btn btn-outline" type="button" data-action="export-master">▧ 画像出力</button><button class="btn btn-primary" id="newFormationBtn" type="button">＋ 編成を新規登録</button></div>
+        </div>
+        <div class="dataset-name-row"><label for="datasetNameMaster">データ名称（任意）</label><input id="datasetNameMaster" type="text" maxlength="100" placeholder="例：南海電気鉄道／高野線　※画像出力にも表示されます"></div>
+        <div class="stats">
+          <div class="stat-card"><div class="stat-icon">▤</div><div><div class="stat-label">登録編成数</div><div class="stat-value" id="masterStat">0<span class="stat-unit">編成</span></div></div></div>
+          <div class="stat-card"><div class="stat-icon">▥</div><div><div class="stat-label">登録車両数</div><div class="stat-value" id="carStat">0<span class="stat-unit">両</span></div></div></div>
+          <div class="stat-card"><div class="stat-icon">⌂</div><div><div class="stat-label">登録車両区数</div><div class="stat-value" id="depotStat">0<span class="stat-unit">箇所</span></div></div></div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-wrap"><span class="search-symbol">⌕</span><input class="search-input" id="masterSearch" type="search" placeholder="編成名・形式・車両番号・メモで検索"></div>
+          <select class="filter-select" id="masterSearchMode" aria-label="検索方法"><option value="partial">部分一致</option><option value="exact">完全一致</option></select>
+          <select class="filter-select" id="masterDepotFilter" aria-label="車両区で絞り込み"><option value="">すべての車両区</option></select>
+          <select class="filter-select" id="masterSort" aria-label="並び替え項目"><option value="updated">更新日時</option><option value="name">編成名</option><option value="cars">両数</option></select>
+          <select class="filter-select sort-direction" id="masterSortDirection" aria-label="並び順"><option value="desc">降順</option><option value="asc">昇順</option></select>
+          <div class="view-control"><span>一覧</span><button type="button" class="view-choice" data-grid-layout="master:one" aria-pressed="false">1列</button><button type="button" class="view-choice" data-grid-layout="master:two" aria-pressed="true">2列</button></div>
+          <div class="result-count" id="masterResultCount">0件表示</div>
+        </div>
+        <div class="section-caption">REGISTERED FORMATIONS</div>
+        <div class="bulk-toolbar" id="masterBulkToolbar"><label><input id="masterSelectAll" type="checkbox"> 表示中をすべて選択</label><span id="masterSelectedCount">0件選択中</span><div><button type="button" class="btn btn-outline btn-small" id="masterBulkEditBtn" disabled>一括編集</button><button type="button" class="btn btn-danger btn-small" id="masterBulkDeleteBtn" disabled>一括削除</button></div></div>
+        <div class="card-grid" id="masterCards"></div>
+      </section>
+      <section id="operationsView" class="view hidden">
+        <div class="page-head">
+          <div><div class="eyebrow">IN SERVICE / 02</div><h1>運用編成</h1><div class="page-description">登録済みの編成マスターを組み合わせ、列車名や走行路線とともに管理します。</div></div>
+          <div class="head-actions"><button class="btn btn-outline" type="button" data-action="export-operations">▧ 画像出力</button><button class="btn btn-primary" id="newOperationBtn" type="button">＋ 運用編成を作成</button></div>
+        </div>
+        <div class="dataset-name-row"><label for="datasetNameOperations">データ名称（任意）</label><input id="datasetNameOperations" type="text" maxlength="100" placeholder="例：南海電気鉄道／高野線　※画像出力にも表示されます"></div>
+        <div class="stats">
+          <div class="stat-card"><div class="stat-icon">⇄</div><div><div class="stat-label">運用編成数</div><div class="stat-value" id="operationStat">0<span class="stat-unit">件</span></div></div></div>
+          <div class="stat-card"><div class="stat-icon">▣</div><div><div class="stat-label">使用中のマスター編成</div><div class="stat-value" id="usedFormationStat">0<span class="stat-unit">編成</span></div></div></div>
+          <div class="stat-card"><div class="stat-icon">⌁</div><div><div class="stat-label">登録路線数</div><div class="stat-value" id="lineStat">0<span class="stat-unit">路線</span></div></div></div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-wrap"><span class="search-symbol">⌕</span><input class="search-input" id="operationSearch" type="search" placeholder="運用名・列車名・路線・編成名で検索"></div>
+          <select class="filter-select" id="operationSearchMode" aria-label="検索方法"><option value="partial">部分一致</option><option value="exact">完全一致</option></select>
+          <select class="filter-select" id="operationLineFilter" aria-label="路線で絞り込み"><option value="">すべての路線</option></select>
+          <select class="filter-select" id="operationDepotFilter" aria-label="車両区で絞り込み"><option value="">すべての車両区</option></select>
+          <select class="filter-select" id="operationSort" aria-label="並び替え項目"><option value="updated">更新日時</option><option value="name">運用編成名</option><option value="train">列車名</option><option value="cars">両数</option></select>
+          <select class="filter-select sort-direction" id="operationSortDirection" aria-label="並び順"><option value="desc">降順</option><option value="asc">昇順</option></select>
+          <div class="view-control"><span>一覧</span><button type="button" class="view-choice" data-grid-layout="operations:one" aria-pressed="false">1列</button><button type="button" class="view-choice" data-grid-layout="operations:two" aria-pressed="true">2列</button></div>
+          <div class="view-control"><span>構成</span><button type="button" class="view-choice" data-operation-display="formations" aria-pressed="true">編成単位</button><button type="button" class="view-choice" data-operation-display="cars" aria-pressed="false">車両単位</button></div>
+          <div class="result-count" id="operationResultCount">0件表示</div>
+        </div>
+        <div class="section-caption">ACTIVE FORMATIONS</div>
+        <div class="bulk-toolbar" id="operationBulkToolbar"><label><input id="operationSelectAll" type="checkbox"> 表示中をすべて選択</label><span id="operationSelectedCount">0件選択中</span><div><button type="button" class="btn btn-outline btn-small" id="operationBulkEditBtn" disabled>一括編集</button><button type="button" class="btn btn-danger btn-small" id="operationBulkDeleteBtn" disabled>一括削除</button></div></div>
+        <div class="card-grid" id="operationCards"></div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog class="dialog" id="formationDialog">
+  <form id="formationForm">
+    <div class="dialog-header"><div><h2 id="formationDialogTitle">編成マスターの新規登録</h2><p>車両の形式と連結順序を登録します。</p></div><button type="button" class="dialog-close" data-close="formationDialog" aria-label="閉じる">×</button></div>
+    <div class="dialog-body">
+      <input type="hidden" id="formationId">
+      <div class="copy-source-row" id="formationCopyArea">
+        <div class="field"><label for="formationCopyPicker">登録済み編成からコピー</label><select id="formationCopyPicker"><option value="">コピー元の編成を選択</option></select><div class="helper">車両構成・所属車両区・備考を複製し、新しい編成の土台にできます。</div></div>
+        <button type="button" class="btn btn-soft" id="copyFormationBtn">選択した編成をコピー</button>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="formationName">編成名・管理名称 <span style="color:#c75b5b">*</span></label><input id="formationName" required maxlength="80" placeholder="例：6000系 6013F"><label class="auto-name-option"><input type="checkbox" id="autoFormationName" checked> 1両目の車両番号から編成名を自動入力（末尾に F）</label></div>
+        <div class="field"><label for="formationDepot">所属車両区・車庫</label><input id="formationDepot" maxlength="80" placeholder="例：千代田車庫"></div>
+        <div class="field full"><label for="formationNotes">備考 <span class="optional">任意</span></label><textarea id="formationNotes" maxlength="1000" placeholder="編成に関するメモなど"></textarea></div>
+      </div>
+      <div class="form-section-title"><span>車両の構成・連結順序</span><button type="button" class="btn btn-soft btn-small" id="addVehicleBtn">＋ 車両を追加</button></div>
+      <div class="helper" style="margin-bottom:9px">上から順に連結順序を登録します。車両形式は必須、車両番号は任意です。</div>
+      <div class="vehicle-editor" id="vehicleEditor"></div>
+      <div class="batch-add-panel" id="batchAddPanel"><div class="field"><label for="batchFormationCount">一括登録する編成数（先頭編成を含む）</label><input id="batchFormationCount" type="number" min="1" max="100" step="1" value="1"><div class="helper">2件目以降は車両番号を車両ごとに繰り上げ、登録済み・生成済みの番号と重複しない番号を自動で割り当てます。</div></div></div>
+    </div>
+    <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="formationDialog">キャンセル</button><button type="submit" class="btn btn-primary">編成を保存</button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="operationDialog">
+  <form id="operationForm">
+    <div class="dialog-header"><div><h2 id="operationDialogTitle">運用編成の新規作成</h2><p>編成マスターを選択して、実際の列車編成を構成します。</p></div><button type="button" class="dialog-close" data-close="operationDialog" aria-label="閉じる">×</button></div>
+    <div class="dialog-body">
+      <input type="hidden" id="operationId">
+      <div class="form-grid">
+        <div class="field"><label for="operationName">運用編成名・管理名称 <span style="color:#c75b5b">*</span></label><input id="operationName" required maxlength="80" placeholder="例：朝ラッシュ時 8両編成"></div>
+        <div class="field"><label for="operationTrainName">列車名 <span class="optional">任意</span></label><input id="operationTrainName" maxlength="80" placeholder="例：特急サザン・普通"></div>
+        <div class="field full"><label for="operationLines">走行路線 <span class="optional">任意・複数可</span></label><input id="operationLines" maxlength="200" placeholder="例：南海本線, 空港線"><div class="helper">複数の路線を登録する場合は、カンマ（,）または読点（、）で区切ってください。</div></div>
+        <div class="field full"><label for="operationNotes">備考 <span class="optional">任意</span></label><textarea id="operationNotes" maxlength="1000" placeholder="運用に関するメモなど"></textarea></div>
+      </div>
+      <div class="form-section-title"><span>運用編成の組み合わせ</span></div>
+      <div class="unit-builder">
+        <div class="helper" style="margin-bottom:8px">追加するマスター編成を選択してください。下の一覧が実際の連結順序になります。</div>
+        <div class="add-unit-row"><select id="formationPicker" aria-label="追加する編成"><option value="">編成マスターを選択</option></select><button class="btn btn-soft" type="button" id="addUnitBtn">＋ 追加</button></div>
+        <div class="selected-units" id="selectedUnits"></div>
+      </div>
+      <div class="form-warning">運用編成は編成マスターのデータを参照します。マスター側の車両構成や所属車両区を編集すると、この運用編成の表示にも自動で反映されます。</div>
+    </div>
+    <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="operationDialog">キャンセル</button><button type="submit" class="btn btn-primary">運用編成を保存</button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog csv-dialog" id="csvImportDialog">
+  <div class="dialog-header">
+    <div><h2>CSV一括登録</h2><p>編成マスターまたは運用編成をCSVからまとめて登録します。</p></div>
+    <button type="button" class="dialog-close" data-close="csvImportDialog" aria-label="閉じる">×</button>
+  </div>
+  <div class="dialog-body">
+    <div class="field">
+      <label for="csvImportType">登録するデータの種類</label>
+      <select id="csvImportType">
+        <option value="master">編成マスター</option>
+        <option value="operations">運用編成</option>
+      </select>
+    </div>
+    <div class="csv-template-grid">
+      <div class="csv-template-card">
+        <strong>編成マスターCSV</strong>
+        <p>1両につき1行です。同じ編成IDの行をまとめて1編成として登録します。</p>
+        <div class="csv-template-actions"><button class="btn btn-outline btn-small" type="button" id="downloadMasterTemplate">空のテンプレート</button><button class="btn btn-soft btn-small" type="button" id="downloadMasterExample">記入例</button></div>
+      </div>
+      <div class="csv-template-card">
+        <strong>運用編成CSV</strong>
+        <p>1つのマスター編成につき1行です。編成IDで既存マスターを参照します。</p>
+        <div class="csv-template-actions"><button class="btn btn-outline btn-small" type="button" id="downloadOperationTemplate">空のテンプレート</button><button class="btn btn-soft btn-small" type="button" id="downloadOperationExample">記入例</button></div>
+      </div>
+    </div>
+    <div class="csv-help" id="csvFormatHelp">編成IDは利用者が自由に設定する管理用IDです（必須）。同じ編成の全車両行に同じIDを入力してください。車両順序は1から連番にします。UTF-8（BOM付き/なし）とShift_JISに対応します。</div>
+    <div class="csv-upload-row">
+      <div class="field"><label for="csvFileInput">CSVファイルを選択</label><input id="csvFileInput" type="file" accept=".csv,text/csv,text/plain"></div>
+      <div class="field"><label for="csvDuplicateMode">既存データとIDが重複した場合</label><select id="csvDuplicateMode"><option value="skip">既存データを残してスキップ（推奨）</option><option value="replace">既存データをCSVの内容で更新</option></select></div>
+    </div>
+    <div class="csv-status" id="csvStatus" aria-live="polite">CSVファイルを選択すると、検証してプレビューを表示します。</div>
+    <div id="csvValidationResult"></div>
+  </div>
+  <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="csvImportDialog">閉じる</button><button type="button" class="btn btn-primary" id="csvRegisterBtn" disabled>検証後に登録</button></div>
+</dialog>
+
+<dialog class="dialog" id="bulkMasterEditDialog">
+  <form id="bulkMasterEditForm">
+    <div class="dialog-header"><div><h2>編成マスターの一括編集</h2><p>チェックした項目だけ、選択中の編成すべてに反映します。</p></div><button type="button" class="dialog-close" data-close="bulkMasterEditDialog" aria-label="閉じる">×</button></div>
+    <div class="dialog-body"><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkMasterNameOn"> 編成名を一括変更</label><input id="bulkMasterName" maxlength="80" placeholder="全編成に設定する編成名"></div><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkMasterDepotOn"> 所属車両区を一括変更</label><input id="bulkMasterDepot" maxlength="80" placeholder="空欄で上書きすると所属を消去"></div><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkMasterNotesOn"> 備考を一括変更</label><textarea id="bulkMasterNotes" maxlength="1000" placeholder="空欄で上書きすると備考を消去"></textarea></div></div>
+    <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="bulkMasterEditDialog">キャンセル</button><button type="submit" class="btn btn-primary">選択した編成を更新</button></div>
+  </form>
+</dialog>
+<dialog class="dialog" id="bulkOperationEditDialog">
+  <form id="bulkOperationEditForm">
+    <div class="dialog-header"><div><h2>運用編成の一括編集</h2><p>チェックした項目だけ、選択中の運用編成すべてに反映します。</p></div><button type="button" class="dialog-close" data-close="bulkOperationEditDialog" aria-label="閉じる">×</button></div>
+    <div class="dialog-body"><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkOperationNameOn"> 運用編成名を一括変更</label><input id="bulkOperationName" maxlength="80" placeholder="全運用編成に設定する名称"></div><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkOperationTrainOn"> 列車名を一括変更</label><input id="bulkOperationTrain" maxlength="80" placeholder="空欄で上書きすると列車名を消去"></div><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkOperationLinesOn"> 走行路線を一括変更</label><input id="bulkOperationLines" maxlength="200" placeholder="例：南海本線, 空港線"><div class="helper">複数路線はカンマまたは読点で区切ってください。</div></div><div class="field"><label class="bulk-field-toggle"><input type="checkbox" id="bulkOperationNotesOn"> 備考を一括変更</label><textarea id="bulkOperationNotes" maxlength="1000" placeholder="空欄で上書きすると備考を消去"></textarea></div></div>
+    <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="bulkOperationEditDialog">キャンセル</button><button type="submit" class="btn btn-primary">選択した運用編成を更新</button></div>
+  </form>
+</dialog>
+<dialog class="dialog" id="csvExportDialog">
+  <div class="dialog-header"><div><h2>CSV出力</h2><p>登録済みの情報を、再度CSV一括登録できる形式で書き出します。</p></div><button type="button" class="dialog-close" data-close="csvExportDialog" aria-label="閉じる">×</button></div>
+  <div class="dialog-body"><div class="csv-template-grid"><div class="csv-template-card"><strong>編成マスター</strong><p>車両1両につき1行で出力します。編成ID・車両順序を含みます。</p><button type="button" class="btn btn-primary" id="exportMasterCsvBtn">編成マスターCSVを出力</button></div><div class="csv-template-card"><strong>運用編成</strong><p>マスター編成のIDと連結順序を含みます。マスターと一緒に出力して保管できます。</p><button type="button" class="btn btn-primary" id="exportOperationCsvBtn">運用編成CSVを出力</button></div></div><div class="csv-help">CSVはUTF-8（BOM付き）で出力します。出力したファイルは、このアプリの「CSV一括登録」から再読み込みできます。</div></div>
+  <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="csvExportDialog">閉じる</button></div>
+</dialog>
+
+<dialog class="dialog image-export-dialog" id="imageExportDialog">
+  <div class="dialog-header">
+    <div><h2 id="imageExportTitle">編成一覧の画像出力</h2><p>出力専用レイアウトです。現在の検索・絞り込み結果を画像にします。</p></div>
+    <button type="button" class="dialog-close" data-close="imageExportDialog" aria-label="閉じる">×</button>
+  </div>
+  <div class="export-toolbar">
+    <div class="export-scope" id="exportScope">出力対象：0件</div>
+    <div class="field export-mode-field hidden" id="exportOperationModeArea"><label for="exportOperationMode">運用編成の表示</label><select id="exportOperationMode"><option value="formations">編成構成</option><option value="cars">車両構成</option></select></div>
+    <div class="field export-format-field"><label for="exportImageFormat">画像形式</label><select id="exportImageFormat"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></div>
+    <button type="button" class="btn btn-primary" id="downloadExportImageBtn">↓ 画像を保存</button>
+  </div>
+  <div class="export-hint" id="exportHint">編成名・所属車両区と車両構成を一覧にします。車両数に応じて画像の横幅が変わります。</div>
+  <div class="export-preview-wrap"><div id="exportPreview" class="export-preview"><div class="export-empty">画像出力するデータがありません。</div></div></div>
+  <div class="dialog-footer"><button type="button" class="btn btn-outline" data-close="imageExportDialog">閉じる</button></div>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+  const DB_KEY = 'railFormationManager.database.v1';
+  const $ = (id) => document.getElementById(id);
+  const state = {
+    db: { app: 'Rail Formation Manager', version: 1, datasetName: '', updatedAt: null, formations: [], operations: [] },
+    view: 'master',
+    fileHandle: null,
+    draftUnits: [],
+    csvImport: null,
+    ui: { masterLayout: 'two', operationLayout: 'two', operationDisplay: 'formations', masterSortDirection: 'desc', operationSortDirection: 'desc', masterSearchMode: 'partial', operationSearchMode: 'partial' },
+    selectedMaster: new Set(),
+    selectedOperations: new Set(),
+    exportKind: 'master',
+    exportRecords: [],
+    toastTimer: null
+  };
+
+  function uid(prefix='id') {
+    if (window.crypto && typeof crypto.randomUUID === 'function') return prefix + '_' + crypto.randomUUID();
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+  }
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function fmtDate(value) {
+    if (!value) return '登録日不明';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '登録日不明';
+    return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function showToast(message) {
+    const t = $('toast'); t.textContent = message; t.classList.add('show');
+    clearTimeout(state.toastTimer); state.toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+  function normalizeDatabase(raw) {
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.formations) || !Array.isArray(raw.operations)) {
+      throw new Error('データベースの形式が正しくありません。formations と operations が必要です。');
+    }
+    const formations = raw.formations.map(f => ({
+      id: String(f.id || uid('formation')),
+      name: String(f.name || '名称未設定'), depot: String(f.depot || ''), notes: String(f.notes || ''), externalId: String(f.externalId || ''),
+      cars: Array.isArray(f.cars) ? f.cars.map(c => ({ id: String(c.id || uid('car')), format: String(c.format || ''), number: String(c.number || '') })) : [],
+      createdAt: f.createdAt || new Date().toISOString(), updatedAt: f.updatedAt || f.createdAt || new Date().toISOString()
+    }));
+    const operations = raw.operations.map(o => ({
+      id: String(o.id || uid('operation')), name: String(o.name || '名称未設定'), trainName: String(o.trainName || ''), externalId: String(o.externalId || ''),
+      lines: Array.isArray(o.lines) ? o.lines.map(String) : String(o.lines || '').split(/[,、]/).map(s=>s.trim()).filter(Boolean),
+      notes: String(o.notes || ''),
+      formations: Array.isArray(o.formations) ? o.formations.map(x => typeof x === 'string' ? ({instanceId: uid('unit'), formationId: x}) : ({instanceId: String(x.instanceId || uid('unit')), formationId: String(x.formationId || '')})) : [],
+      createdAt: o.createdAt || new Date().toISOString(), updatedAt: o.updatedAt || o.createdAt || new Date().toISOString()
+    }));
+    return { app: 'Rail Formation Manager', version: 1, datasetName: String(raw.datasetName || ''), updatedAt: raw.updatedAt || new Date().toISOString(), formations, operations };
+  }
+  function dbText() {
+    state.db.updatedAt = new Date().toISOString();
+    return JSON.stringify(state.db, null, 2) + '\n';
+  }
+  function saveLocal() {
+    try {
+      localStorage.setItem(DB_KEY, dbText());
+      $('dbStatus').textContent = 'ブラウザに自動保存中';
+    } catch (err) {
+      $('dbStatus').textContent = '自動保存できません';
+      console.error(err);
+    }
+  }
+  function loadLocal() {
+    try {
+      const saved = localStorage.getItem(DB_KEY);
+      if (saved) state.db = normalizeDatabase(JSON.parse(saved));
+    } catch (err) {
+      console.error(err); showToast('保存データを読み込めませんでした。初期状態で起動します。');
+    }
+  }
+  function loadUiPreferences() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('railFormationManager.ui.v1') || '{}');
+      state.ui.masterLayout = saved.masterLayout === 'one' ? 'one' : 'two';
+      state.ui.operationLayout = saved.operationLayout === 'one' ? 'one' : 'two';
+      state.ui.operationDisplay = saved.operationDisplay === 'cars' ? 'cars' : 'formations';
+      state.ui.masterSortDirection = saved.masterSortDirection === 'asc' ? 'asc' : 'desc';
+      state.ui.operationSortDirection = saved.operationSortDirection === 'asc' ? 'asc' : 'desc';
+      state.ui.masterSearchMode = saved.masterSearchMode === 'exact' ? 'exact' : 'partial';
+      state.ui.operationSearchMode = saved.operationSearchMode === 'exact' ? 'exact' : 'partial';
+      $('masterSortDirection').value = state.ui.masterSortDirection;
+      $('operationSortDirection').value = state.ui.operationSortDirection;
+      $('masterSearchMode').value = state.ui.masterSearchMode;
+      $('operationSearchMode').value = state.ui.operationSearchMode;
+    } catch (err) { console.warn('表示設定を読み込めませんでした。', err); }
+  }
+  function saveUiPreferences() {
+    try { localStorage.setItem('railFormationManager.ui.v1', JSON.stringify(state.ui)); }
+    catch (err) { console.warn('表示設定を保存できませんでした。', err); }
+  }
+  function applyViewPreferences() {
+    $('masterCards').classList.toggle('one-column', state.ui.masterLayout === 'one');
+    $('masterCards').classList.toggle('two-column', state.ui.masterLayout === 'two');
+    $('operationCards').classList.toggle('one-column', state.ui.operationLayout === 'one');
+    $('operationCards').classList.toggle('two-column', state.ui.operationLayout === 'two');
+    document.querySelectorAll('[data-grid-layout]').forEach(btn => {
+      const [view, layout] = btn.dataset.gridLayout.split(':');
+      const current = view === 'master' ? state.ui.masterLayout : state.ui.operationLayout;
+      btn.setAttribute('aria-pressed', String(current === layout));
+    });
+    document.querySelectorAll('[data-operation-display]').forEach(btn => btn.setAttribute('aria-pressed', String(state.ui.operationDisplay === btn.dataset.operationDisplay)));
+  }
+  function commitAndRender(message) {
+    saveLocal(); render(); if (message) showToast(message);
+  }
+  function getFormation(id) { return state.db.formations.find(f => f.id === id); }
+  function getOperation(id) { return state.db.operations.find(o => o.id === id); }
+  function isFormationUsed(id) { return state.db.operations.some(o => o.formations.some(u => u.formationId === id)); }
+  function allDepots() { return [...new Set(state.db.formations.map(f=>f.depot.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja')); }
+  function allLines() { return [...new Set(state.db.operations.flatMap(o=>o.lines).map(x=>x.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja')); }
+  function totalCars() { return state.db.formations.reduce((sum,f)=>sum+f.cars.length,0); }
+  function totalOperationCars(o) { return o.formations.reduce((sum,u)=>sum+(getFormation(u.formationId)?.cars.length || 0),0); }
+
+  function switchView(view) {
+    state.view = view;
+    $('masterView').classList.toggle('hidden', view !== 'master');
+    $('operationsView').classList.toggle('hidden', view !== 'operations');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  }
+
+  function render() {
+    const masterIds=new Set(state.db.formations.map(f=>f.id));
+    const operationIds=new Set(state.db.operations.map(o=>o.id));
+    state.selectedMaster=new Set([...state.selectedMaster].filter(id=>masterIds.has(id)));
+    state.selectedOperations=new Set([...state.selectedOperations].filter(id=>operationIds.has(id)));
+    $('datasetNameMaster').value = state.db.datasetName || '';
+    $('datasetNameOperations').value = state.db.datasetName || '';
+    $('masterNavCount').textContent = state.db.formations.length;
+    $('operationNavCount').textContent = state.db.operations.length;
+    $('masterStat').innerHTML = `${state.db.formations.length}<span class="stat-unit">編成</span>`;
+    $('carStat').innerHTML = `${totalCars()}<span class="stat-unit">両</span>`;
+    $('depotStat').innerHTML = `${allDepots().length}<span class="stat-unit">箇所</span>`;
+    $('operationStat').innerHTML = `${state.db.operations.length}<span class="stat-unit">件</span>`;
+    const used = new Set(state.db.operations.flatMap(o=>o.formations.map(u=>u.formationId))).size;
+    $('usedFormationStat').innerHTML = `${used}<span class="stat-unit">編成</span>`;
+    $('lineStat').innerHTML = `${allLines().length}<span class="stat-unit">路線</span>`;
+    renderFilterOptions(); renderMasterCards(); renderOperationCards(); applyViewPreferences();
+  }
+  function setSelectOptions(select, values, firstLabel) {
+    const current = select.value;
+    select.innerHTML = `<option value="">${esc(firstLabel)}</option>` + values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    if (values.includes(current)) select.value = current;
+  }
+  function renderFilterOptions() {
+    setSelectOptions($('masterDepotFilter'), allDepots(), 'すべての車両区');
+    setSelectOptions($('operationDepotFilter'), allDepots(), 'すべての車両区');
+    setSelectOptions($('operationLineFilter'), allLines(), 'すべての路線');
+  }
+  function carStrip(cars) {
+    if (!cars.length) return '<div class="helper">車両データが登録されていません。</div>';
+    return `<div class="vehicle-strip">${cars.map((c,i)=>`<div class="vehicle-chip"><span class="car-order">${String(i+1).padStart(2,'0')}</span><span class="car-format">${esc(c.format || '形式未設定')}</span><span class="car-number">${esc(c.number || '番号未登録')}</span></div>`).join('')}</div>`;
+  }
+  function searchMatches(fields, query, mode) {
+    if (!query) return true;
+    const values = fields.map(v => String(v ?? '').trim().toLocaleLowerCase()).filter(Boolean);
+    return mode === 'exact' ? values.some(v => v === query) : values.some(v => v.includes(query));
+  }
+  function filteredMasterList() {
+    const query = $('masterSearch').value.trim().toLocaleLowerCase();
+    const searchMode = $('masterSearchMode').value;
+    const depot = $('masterDepotFilter').value;
+    const sort = $('masterSort').value;
+    const list = state.db.formations.filter(f => {
+      const fields = [f.name,f.depot,f.notes,...f.cars.flatMap(c=>[c.format,c.number])];
+      return searchMatches(fields, query, searchMode) && (!depot || f.depot === depot);
+    });
+    const direction = $('masterSortDirection').value === 'asc' ? 1 : -1;
+    list.sort((a,b)=>{
+      let result=0;
+      if(sort==='name') result=a.name.localeCompare(b.name,'ja');
+      else if(sort==='cars') result=a.cars.length-b.cars.length;
+      else result=new Date(a.updatedAt)-new Date(b.updatedAt);
+      return result*direction;
+    });
+    return list;
+  }
+  function renderMasterCards() {
+    const list = filteredMasterList();
+    $('masterResultCount').textContent = `${list.length}件表示`;
+    const target = $('masterCards');
+    if (!list.length) {
+      target.innerHTML = `<div class="empty-state"><div class="empty-icon">▤</div><h3>${state.db.formations.length ? '条件に一致する編成がありません' : '編成マスターはまだありません'}</h3><p>${state.db.formations.length ? '検索語や車両区の条件を変更してください。' : '最初の編成を登録して、車両データベースを作成しましょう。'}</p>${state.db.formations.length ? '' : '<button class="btn btn-primary" type="button" data-action="new-formation">＋ 編成を登録する</button>'}</div>`;
+      updateSelectionToolbar('master',list);
+      return;
+    }
+    target.innerHTML = list.map(f=>`<article class="formation-card">
+      <div class="card-top"><div><label class="card-select"><input type="checkbox" data-select-master="${esc(f.id)}" ${state.selectedMaster.has(f.id)?'checked':''}>選択</label><h3 class="card-title">${esc(f.name)}</h3><div class="card-subtitle">${esc(f.depot || '所属車両区未設定')}</div>${f.externalId ? `<div class="formation-external-id">CSV ID：${esc(f.externalId)}</div>` : ''}</div><span class="pill pill-blue">${f.cars.length} 両編成</span></div>
+      <div class="card-divider"></div>${carStrip(f.cars)}
+      ${f.notes ? `<div class="card-meta"><span class="meta-item">▧ ${esc(f.notes.length>58?f.notes.slice(0,58)+'…':f.notes)}</span></div>` : ''}
+      <div class="card-footer"><span class="card-date">更新：${fmtDate(f.updatedAt)}</span><div class="card-actions"><button class="btn btn-outline btn-small" type="button" data-action="edit-formation" data-id="${esc(f.id)}">編集</button><button class="btn btn-danger btn-small" type="button" data-action="delete-formation" data-id="${esc(f.id)}">削除</button></div></div>
+    </article>`).join('');
+    updateSelectionToolbar('master',list);
+  }
+  function filteredOperationList() {
+    const query = $('operationSearch').value.trim().toLocaleLowerCase();
+    const searchMode = $('operationSearchMode').value;
+    const line = $('operationLineFilter').value;
+    const depot = $('operationDepotFilter').value;
+    const sort=$('operationSort').value, direction=$('operationSortDirection').value==='asc'?1:-1;
+    return state.db.operations.filter(o => {
+      const linked = o.formations.map(u=>getFormation(u.formationId)).filter(Boolean);
+      const fields = [o.name,o.trainName,o.notes,...o.lines,...linked.flatMap(f=>[f.name,f.depot,...f.cars.flatMap(c=>[c.format,c.number])])];
+      return searchMatches(fields, query, searchMode) && (!line || o.lines.includes(line)) && (!depot || linked.some(f=>f.depot===depot));
+    }).sort((a,b)=>{let result=0;if(sort==='name')result=a.name.localeCompare(b.name,'ja');else if(sort==='train')result=a.trainName.localeCompare(b.trainName,'ja');else if(sort==='cars')result=totalOperationCars(a)-totalOperationCars(b);else result=new Date(a.updatedAt)-new Date(b.updatedAt);return result*direction;});
+  }
+  function renderOperationCarGroups(units) {
+    return `<div class="op-car-groups">${units.map((u,i)=>{
+      const f=getFormation(u.formationId);
+      if(!f) return `<div class="op-car-group missing"><div class="op-car-group-head">${i+1}編成目：参照先がありません</div></div>`;
+      return `<div class="op-car-group"><div class="op-car-group-head"><strong>${i+1}編成目：${esc(f.name)}</strong><small>${esc(f.depot||'車両区未設定')} ／ ${f.cars.length}両</small></div>${carStrip(f.cars)}</div>`;
+    }).join('<span class="op-plus">＋</span>')}</div>`;
+  }
+  function renderOperationCards() {
+    const list = filteredOperationList();
+    $('operationResultCount').textContent = `${list.length}件表示`;
+    const target = $('operationCards');
+    if (!list.length) {
+      target.innerHTML = `<div class="empty-state"><div class="empty-icon">⇄</div><h3>${state.db.operations.length ? '条件に一致する運用編成がありません' : '運用編成はまだありません'}</h3><p>${state.db.operations.length ? '検索条件を変更してください。' : '編成マスターを組み合わせて、実際に走る列車の編成を登録しましょう。'}</p>${state.db.operations.length ? '' : `<button class="btn btn-primary" type="button" data-action="new-operation" ${state.db.formations.length?'':'disabled'}>＋ 運用編成を作成する</button>`}</div>`;
+      updateSelectionToolbar('operations',list);
+      return;
+    }
+    target.innerHTML = list.map(o=>{
+      const units = o.formations.map(u=>getFormation(u.formationId));
+      const unitHtml = o.formations.map((u,i)=>{
+        const f=getFormation(u.formationId);
+        return `${i?'<span class="op-plus">＋</span>':''}<div class="op-unit"><strong>${esc(f?.name || '参照先がありません')}</strong><small>${esc(f?.depot || '車両区未設定')} ／ ${f?f.cars.length:0}両</small></div>`;
+      }).join('');
+      const train = o.trainName ? `<span class="pill pill-amber">${esc(o.trainName)}</span>` : '<span class="pill">列車名未設定</span>';
+      return `<article class="operation-card">
+        <div class="card-top"><div><label class="card-select"><input type="checkbox" data-select-operation="${esc(o.id)}" ${state.selectedOperations.has(o.id)?'checked':''}>選択</label><h3 class="card-title">${esc(o.name)}</h3><div class="card-subtitle">${o.formations.length}個のマスター編成を連結 ・ 合計 ${totalOperationCars(o)}両</div></div>${train}</div>
+        ${o.lines.length ? `<div class="line-tags">${o.lines.map(l=>`<span class="line-tag">⌁ ${esc(l)}</span>`).join('')}</div>` : '<div class="card-subtitle" style="margin-top:8px">走行路線未設定</div>'}
+        <div class="card-divider"></div>${state.ui.operationDisplay==='cars' ? (o.formations.length ? renderOperationCarGroups(o.formations) : '<span class="helper">編成が登録されていません。</span>') : `<div class="op-units">${unitHtml || '<span class="helper">編成が登録されていません。</span>'}</div>`}
+        ${o.notes ? `<div class="card-meta"><span class="meta-item">▧ ${esc(o.notes.length>58?o.notes.slice(0,58)+'…':o.notes)}</span></div>` : ''}
+        <div class="card-footer"><span class="card-date">更新：${fmtDate(o.updatedAt)}</span><div class="card-actions"><button class="btn btn-outline btn-small" type="button" data-action="edit-operation" data-id="${esc(o.id)}">編集</button><button class="btn btn-danger btn-small" type="button" data-action="delete-operation" data-id="${esc(o.id)}">削除</button></div></div>
+      </article>`;
+    }).join('');
+    updateSelectionToolbar('operations',list);
+  }
+
+  function updateSelectionToolbar(kind,visibleList) {
+    const master=kind==='master', selected=master?state.selectedMaster:state.selectedOperations;
+    const all=(visibleList||[]).length>0 && visibleList.every(x=>selected.has(x.id));
+    const selectAll=$(master?'masterSelectAll':'operationSelectAll');
+    selectAll.checked=all; selectAll.indeterminate=!all && (visibleList||[]).some(x=>selected.has(x.id));
+    $(master?'masterSelectedCount':'operationSelectedCount').textContent=`${selected.size}件選択中`;
+    $(master?'masterBulkEditBtn':'operationBulkEditBtn').disabled=!selected.size;
+    $(master?'masterBulkDeleteBtn':'operationBulkDeleteBtn').disabled=!selected.size;
+  }
+  function visibleSelectedIds(kind) {
+    const selected=kind==='master'?state.selectedMaster:state.selectedOperations;
+    const all=kind==='master'?state.db.formations:state.db.operations;
+    return [...selected].filter(id=>all.some(x=>x.id===id));
+  }
+  function openBulkEdit(kind) {
+    const ids=visibleSelectedIds(kind); if(!ids.length){showToast('一括編集するデータを選択してください。');return;}
+    if(kind==='master'){ $('bulkMasterEditForm').reset(); $('bulkMasterEditDialog').showModal(); }
+    else { $('bulkOperationEditForm').reset(); $('bulkOperationEditDialog').showModal(); }
+  }
+  function bulkDelete(kind) {
+    const ids=visibleSelectedIds(kind); if(!ids.length)return;
+    if(kind==='master'){
+      const used=ids.filter(id=>isFormationUsed(id));
+      const removable=ids.filter(id=>!isFormationUsed(id));
+      if(!removable.length){alert('選択した編成はすべて運用編成で使用中のため削除できません。先に運用編成から取り除いてください。');return;}
+      const skipped=used.length;
+      if(!confirm(`選択 ${ids.length}件のうち、削除可能な ${removable.length}件を削除しますか？${skipped?`\n運用編成で使用中の${skipped}件は削除せず残します。`:''}`))return;
+      state.db.formations=state.db.formations.filter(f=>!removable.includes(f.id));
+      removable.forEach(id=>state.selectedMaster.delete(id));
+      commitAndRender(`${removable.length}件を削除しました。${skipped?` 使用中の${skipped}件は残しました。`:''}`);
+    }else{
+      if(!confirm(`選択した運用編成 ${ids.length}件を削除しますか？\n参照元の編成マスターは削除されません。`))return;
+      state.db.operations=state.db.operations.filter(o=>!ids.includes(o.id)); ids.forEach(id=>state.selectedOperations.delete(id));
+      commitAndRender(`${ids.length}件の運用編成を削除しました。`);
+    }
+  }
+  $('masterSelectAll').addEventListener('change',e=>{filteredMasterList().forEach(f=>e.target.checked?state.selectedMaster.add(f.id):state.selectedMaster.delete(f.id));renderMasterCards();});
+  $('operationSelectAll').addEventListener('change',e=>{filteredOperationList().forEach(o=>e.target.checked?state.selectedOperations.add(o.id):state.selectedOperations.delete(o.id));renderOperationCards();});
+  $('masterBulkEditBtn').addEventListener('click',()=>openBulkEdit('master'));
+  $('operationBulkEditBtn').addEventListener('click',()=>openBulkEdit('operations'));
+  $('masterBulkDeleteBtn').addEventListener('click',()=>bulkDelete('master'));
+  $('operationBulkDeleteBtn').addEventListener('click',()=>bulkDelete('operations'));
+  $('bulkMasterEditForm').addEventListener('submit',e=>{
+    e.preventDefault(); const ids=new Set(state.selectedMaster); if(!ids.size)return;
+    const enabled=['Name','Depot','Notes'].filter(k=>$(`bulkMaster${k}On`).checked); if(!enabled.length){showToast('更新する項目にチェックを入れてください。');return;}
+    if($('bulkMasterNameOn').checked && !$('bulkMasterName').value.trim()){showToast('編成名を一括変更する場合は名称を入力してください。');return;}
+    const now=new Date().toISOString(); state.db.formations.forEach(f=>{if(!ids.has(f.id))return;if($('bulkMasterNameOn').checked)f.name=$('bulkMasterName').value.trim();if($('bulkMasterDepotOn').checked)f.depot=$('bulkMasterDepot').value.trim();if($('bulkMasterNotesOn').checked)f.notes=$('bulkMasterNotes').value.trim();f.updatedAt=now;});
+    $('bulkMasterEditDialog').close();commitAndRender(`${ids.size}件の編成マスターを一括更新しました。`);
+  });
+  $('bulkOperationEditForm').addEventListener('submit',e=>{
+    e.preventDefault(); const ids=new Set(state.selectedOperations); if(!ids.size)return;
+    const enabled=['Name','Train','Lines','Notes'].filter(k=>$(`bulkOperation${k}On`).checked); if(!enabled.length){showToast('更新する項目にチェックを入れてください。');return;}
+    if($('bulkOperationNameOn').checked && !$('bulkOperationName').value.trim()){showToast('運用編成名を一括変更する場合は名称を入力してください。');return;}
+    const now=new Date().toISOString(); state.db.operations.forEach(o=>{if(!ids.has(o.id))return;if($('bulkOperationNameOn').checked)o.name=$('bulkOperationName').value.trim();if($('bulkOperationTrainOn').checked)o.trainName=$('bulkOperationTrain').value.trim();if($('bulkOperationLinesOn').checked)o.lines=$('bulkOperationLines').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);if($('bulkOperationNotesOn').checked)o.notes=$('bulkOperationNotes').value.trim();o.updatedAt=now;});
+    $('bulkOperationEditDialog').close();commitAndRender(`${ids.size}件の運用編成を一括更新しました。`);
+  });
+
+  function syncFormationNameFromLeadCar() {
+    if(!$('autoFormationName').checked) return;
+    const firstNumber=$('vehicleEditor').querySelector('.vehicle-edit-row .car-number-input')?.value.trim() || '';
+    if(firstNumber) $('formationName').value = `${firstNumber}F`;
+  }
+  function addVehicleRow(format='', number='') {
+    const row = document.createElement('div'); row.className='vehicle-edit-row';
+    row.innerHTML = `<span class="row-number"></span><input class="car-format-input" required maxlength="40" placeholder="車両形式（例：モハ6000）" value="${esc(format)}"><input class="car-number-input" maxlength="40" placeholder="車両番号（任意）" value="${esc(number)}"><button type="button" class="remove-row" aria-label="この車両を削除">×</button>`;
+    row.querySelector('.remove-row').addEventListener('click',()=>{row.remove(); renumberVehicleRows(); syncFormationNameFromLeadCar();});
+    row.querySelector('.car-number-input').addEventListener('input',()=>{ if(row=== $('vehicleEditor').querySelector('.vehicle-edit-row')) syncFormationNameFromLeadCar(); });
+    $('vehicleEditor').appendChild(row); renumberVehicleRows();
+  }
+  function renumberVehicleRows() {
+    const rows=[...$('vehicleEditor').querySelectorAll('.vehicle-edit-row')];
+    rows.forEach((r,i)=>r.querySelector('.row-number').textContent=String(i+1).padStart(2,'0'));
+  }
+  function populateFormationCopyPicker() {
+    $('formationCopyPicker').innerHTML='<option value="">コピー元の編成を選択</option>'+state.db.formations.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja')).map(f=>`<option value="${esc(f.id)}">${esc(f.name)}（${f.cars.length}両／${esc(f.depot||'車両区未設定')}）</option>`).join('');
+  }
+  function copyFormationIntoForm() {
+    const source=getFormation($('formationCopyPicker').value);
+    if(!source){showToast('コピー元の編成を選択してください。');return;}
+    $('formationName').value=`${source.name}（コピー）`;
+    $('formationDepot').value=source.depot;
+    $('formationNotes').value=source.notes;
+    $('vehicleEditor').innerHTML='';
+    source.cars.forEach(c=>addVehicleRow(c.format,c.number));
+    syncFormationNameFromLeadCar();
+    showToast(`「${source.name}」の情報をコピーしました。`);
+  }
+  function openFormationDialog(id=null) {
+    $('formationForm').reset(); $('vehicleEditor').innerHTML=''; $('formationId').value=id||'';
+    const f=id?getFormation(id):null;
+    $('formationDialogTitle').textContent=f?'編成マスターの編集':'編成マスターの新規登録';
+    $('formationCopyArea').classList.toggle('hidden',!!f);
+    $('batchAddPanel').classList.toggle('hidden',!!f);
+    $('batchFormationCount').value='1';
+    $('autoFormationName').checked=!f;
+    if(!f) populateFormationCopyPicker(); else $('formationCopyPicker').value='';
+    $('formationName').value=f?.name||''; $('formationDepot').value=f?.depot||''; $('formationNotes').value=f?.notes||'';
+    if(f && f.cars.length) f.cars.forEach(c=>addVehicleRow(c.format,c.number)); else addVehicleRow();
+    $('formationDialog').showModal();
+  }
+  function incrementRailNumber(value) {
+    const text=String(value||''); const match=text.match(/^(.*?)(\d+)(\D*)$/);
+    if(!match) return null;
+    const digits=String(Number(match[2])+1).padStart(match[2].length,'0');
+    return `${match[1]}${digits}${match[3]}`;
+  }
+  function createBatchFormations(firstItem,count) {
+    const created=[firstItem]; if(count<=1)return created;
+    const occupied=new Set(state.db.formations.flatMap(f=>f.cars.map(c=>String(c.number||'').trim()).filter(Boolean)));
+    firstItem.cars.forEach(c=>{if(c.number)occupied.add(c.number);});
+    let previous=firstItem.cars.map(c=>c.number);
+    for(let batchIndex=1;batchIndex<count;batchIndex++){
+      const cars=firstItem.cars.map((car,index)=>{
+        if(!car.number)return {id:uid('car'),format:car.format,number:''};
+        let candidate=incrementRailNumber(previous[index]);
+        if(candidate===null)throw new Error(`車両${index+1}の番号「${previous[index]}」は数字を含まないため、自動採番できません。`);
+        let guard=0; while(occupied.has(candidate) && guard<100000){candidate=incrementRailNumber(candidate);guard++;}
+        if(!candidate || guard>=100000)throw new Error(`車両${index+1}の空き番号を見つけられませんでした。`);
+        occupied.add(candidate); previous[index]=candidate;
+        return {id:uid('car'),format:car.format,number:candidate};
+      });
+      const auto=$('autoFormationName').checked;
+      const generatedName=auto && cars[0]?.number ? `${cars[0].number}F` : `${firstItem.name}（${batchIndex+1}）`;
+      created.push({...firstItem,id:uid('formation'),externalId:'',name:generatedName,cars,createdAt:firstItem.createdAt,updatedAt:firstItem.updatedAt});
+    }
+    return created;
+  }
+
+  $('formationForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const id=$('formationId').value; const name=$('formationName').value.trim();
+    const rows=[...$('vehicleEditor').querySelectorAll('.vehicle-edit-row')];
+    const cars=rows.map(r=>({id:uid('car'),format:r.querySelector('.car-format-input').value.trim(),number:r.querySelector('.car-number-input').value.trim()}));
+    if(!name){showToast('編成名を入力してください。');return;}
+    if(!cars.length || cars.some(c=>!c.format)){showToast('車両形式を1両以上入力してください。');return;}
+    const old=id?getFormation(id):null; const now=new Date().toISOString();
+    const item={id:id||uid('formation'),externalId:old?.externalId||'',name,depot:$('formationDepot').value.trim(),notes:$('formationNotes').value.trim(),cars,createdAt:old?.createdAt||now,updatedAt:now};
+    if(old) state.db.formations=state.db.formations.map(x=>x.id===id?item:x);
+    else {
+      const count=Math.max(1,Math.min(100,Number.parseInt($('batchFormationCount').value,10)||1));
+      try{state.db.formations.push(...createBatchFormations(item,count));}catch(err){showToast(err.message||'一括登録に失敗しました。');return;}
+    }
+    $('formationDialog').close(); commitAndRender(old?'編成マスターを更新しました。':`編成マスターを${old?1:Math.max(1,Number.parseInt($('batchFormationCount').value,10)||1)}件登録しました。`);
+  });
+  $('addVehicleBtn').addEventListener('click',()=>addVehicleRow());
+  $('copyFormationBtn').addEventListener('click',copyFormationIntoForm);
+  $('autoFormationName').addEventListener('change',()=>{if($('autoFormationName').checked) syncFormationNameFromLeadCar();});
+  $('newFormationBtn').addEventListener('click',()=>openFormationDialog());
+
+  function populateFormationPicker(selectedId='') {
+    const picker=$('formationPicker');
+    picker.innerHTML='<option value="">編成マスターを選択</option>'+state.db.formations.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja')).map(f=>`<option value="${esc(f.id)}">${esc(f.name)}（${f.cars.length}両／${esc(f.depot||'車両区未設定')}）</option>`).join('');
+    if(selectedId && getFormation(selectedId)) picker.value=selectedId;
+  }
+  function renderDraftUnits() {
+    const target=$('selectedUnits');
+    if(!state.draftUnits.length){target.innerHTML='<div class="no-units">編成マスターがまだ追加されていません。</div>';return;}
+    target.innerHTML=state.draftUnits.map((u,i)=>{
+      const f=getFormation(u.formationId);
+      return `<div class="selected-unit"><span class="unit-index">${String(i+1).padStart(2,'0')}</span><div><strong>${esc(f?.name||'削除された編成')}</strong><small>${esc(f?.depot||'車両区未設定')} ／ ${f?f.cars.length:0}両</small></div><div class="unit-actions"><button type="button" class="btn-icon" data-unit-action="up" data-index="${i}" title="上へ" ${i===0?'disabled':''}>↑</button><button type="button" class="btn-icon" data-unit-action="down" data-index="${i}" title="下へ" ${i===state.draftUnits.length-1?'disabled':''}>↓</button><button type="button" class="btn-icon" data-unit-action="remove" data-index="${i}" title="削除">×</button></div></div>`;
+    }).join('');
+  }
+  function openOperationDialog(id=null) {
+    if(!state.db.formations.length){showToast('先に編成マスターを1件以上登録してください。');return;}
+    $('operationForm').reset(); $('operationId').value=id||'';
+    const o=id?getOperation(id):null;
+    $('operationDialogTitle').textContent=o?'運用編成の編集':'運用編成の新規作成';
+    $('operationName').value=o?.name||''; $('operationTrainName').value=o?.trainName||'';
+    $('operationLines').value=o?.lines.join(', ')||''; $('operationNotes').value=o?.notes||'';
+    state.draftUnits=o?o.formations.map(u=>({instanceId:u.instanceId||uid('unit'),formationId:u.formationId})).filter(u=>getFormation(u.formationId)):[];
+    populateFormationPicker(); renderDraftUnits(); $('operationDialog').showModal();
+  }
+  $('newOperationBtn').addEventListener('click',()=>openOperationDialog());
+  $('addUnitBtn').addEventListener('click',()=>{
+    const id=$('formationPicker').value;
+    if(!id){showToast('追加する編成マスターを選択してください。');return;}
+    state.draftUnits.push({instanceId:uid('unit'),formationId:id}); renderDraftUnits(); $('formationPicker').value='';
+  });
+  $('selectedUnits').addEventListener('click',e=>{
+    const b=e.target.closest('[data-unit-action]'); if(!b)return;
+    const i=Number(b.dataset.index); const action=b.dataset.unitAction;
+    if(action==='remove') state.draftUnits.splice(i,1);
+    if(action==='up' && i>0) [state.draftUnits[i-1],state.draftUnits[i]]=[state.draftUnits[i],state.draftUnits[i-1]];
+    if(action==='down' && i<state.draftUnits.length-1) [state.draftUnits[i+1],state.draftUnits[i]]=[state.draftUnits[i],state.draftUnits[i+1]];
+    renderDraftUnits();
+  });
+  $('operationForm').addEventListener('submit',e=>{
+    e.preventDefault(); const id=$('operationId').value; const name=$('operationName').value.trim();
+    if(!name){showToast('運用編成名を入力してください。');return;}
+    if(!state.draftUnits.length){showToast('運用編成に使用する編成を1件以上追加してください。');return;}
+    const old=id?getOperation(id):null; const now=new Date().toISOString();
+    const lines=$('operationLines').value.split(/[,、]/).map(s=>s.trim()).filter(Boolean);
+    const item={id:id||uid('operation'),externalId:old?.externalId||'',name,trainName:$('operationTrainName').value.trim(),lines,notes:$('operationNotes').value.trim(),formations:state.draftUnits.map(u=>({...u})),createdAt:old?.createdAt||now,updatedAt:now};
+    if(old) state.db.operations=state.db.operations.map(x=>x.id===id?item:x); else state.db.operations.push(item);
+    $('operationDialog').close(); commitAndRender(old?'運用編成を更新しました。':'運用編成を登録しました。');
+  });
+
+  document.addEventListener('click',e=>{
+    const close=e.target.closest('[data-close]'); if(close){$(close.dataset.close).close();return;}
+    const nav=e.target.closest('[data-view]'); if(nav){switchView(nav.dataset.view);return;}
+    const gridChoice=e.target.closest('[data-grid-layout]');
+    if(gridChoice){const [view,layout]=gridChoice.dataset.gridLayout.split(':');if(view==='master')state.ui.masterLayout=layout;else state.ui.operationLayout=layout;saveUiPreferences();applyViewPreferences();return;}
+    const operationDisplay=e.target.closest('[data-operation-display]');
+    if(operationDisplay){state.ui.operationDisplay=operationDisplay.dataset.operationDisplay;saveUiPreferences();renderOperationCards();applyViewPreferences();return;}
+    const action=e.target.closest('[data-action]'); if(!action)return;
+    const id=action.dataset.id;
+    switch(action.dataset.action){
+      case 'export-master': openImageExport('master'); break;
+      case 'export-operations': openImageExport('operations'); break;
+      case 'new-formation': openFormationDialog(); break;
+      case 'new-operation': openOperationDialog(); break;
+      case 'edit-formation': openFormationDialog(id); break;
+      case 'edit-operation': openOperationDialog(id); break;
+      case 'delete-formation': {
+        const f=getFormation(id); if(!f)return;
+        const refs=state.db.operations.filter(o=>o.formations.some(u=>u.formationId===id));
+        if(refs.length){alert(`「${f.name}」は ${refs.length} 件の運用編成で使用されています。\n先に該当する運用編成からこの編成を取り除いてください。`);return;}
+        if(confirm(`編成マスター「${f.name}」を削除しますか？\nこの操作は取り消せません。`)){state.db.formations=state.db.formations.filter(x=>x.id!==id);commitAndRender('編成マスターを削除しました。');}
+        break;
+      }
+      case 'delete-operation': {
+        const o=getOperation(id); if(!o)return;
+        if(confirm(`運用編成「${o.name}」を削除しますか？\n参照元の編成マスターは削除されません。`)){state.db.operations=state.db.operations.filter(x=>x.id!==id);commitAndRender('運用編成を削除しました。');}
+        break;
+      }
+    }
+  });
+
+  ['masterSearch','masterSearchMode','masterDepotFilter','masterSort','masterSortDirection'].forEach(id=>$(id).addEventListener(id==='masterSearch'?'input':'change',()=>{if(id==='masterSortDirection')state.ui.masterSortDirection=$('masterSortDirection').value;if(id==='masterSearchMode')state.ui.masterSearchMode=$('masterSearchMode').value;saveUiPreferences();renderMasterCards();}));
+  ['operationSearch','operationSearchMode','operationLineFilter','operationDepotFilter','operationSort','operationSortDirection'].forEach(id=>$(id).addEventListener(id==='operationSearch'?'input':'change',()=>{if(id==='operationSortDirection')state.ui.operationSortDirection=$('operationSortDirection').value;if(id==='operationSearchMode')state.ui.operationSearchMode=$('operationSearchMode').value;saveUiPreferences();renderOperationCards();}));
+  document.addEventListener('change',e=>{
+    const master=e.target.closest('[data-select-master]'); if(master){master.checked?state.selectedMaster.add(master.dataset.selectMaster):state.selectedMaster.delete(master.dataset.selectMaster);updateSelectionToolbar('master',filteredMasterList());return;}
+    const operation=e.target.closest('[data-select-operation]'); if(operation){operation.checked?state.selectedOperations.add(operation.dataset.selectOperation):state.selectedOperations.delete(operation.dataset.selectOperation);updateSelectionToolbar('operations',filteredOperationList());}
+  });
+  function syncDatasetName(value){state.db.datasetName=String(value||'').slice(0,100);$('datasetNameMaster').value=state.db.datasetName;$('datasetNameOperations').value=state.db.datasetName;saveLocal();}
+  $('datasetNameMaster').addEventListener('input',e=>syncDatasetName(e.target.value));
+  $('datasetNameOperations').addEventListener('input',e=>syncDatasetName(e.target.value));
+
+  // 画像出力専用画面。HTMLプレビューとCanvas書き出しを同じデータから生成する。
+  function openImageExport(kind) {
+    state.exportKind=kind;
+    state.exportRecords=kind==='master'?filteredMasterList():filteredOperationList();
+    if(kind==='operations') $('exportOperationMode').value=state.ui.operationDisplay;
+    $('imageExportTitle').textContent=kind==='master'?'編成マスター一覧の画像出力':'運用編成一覧の画像出力';
+    $('exportScope').textContent=`出力対象：${state.exportRecords.length}件（現在の検索・絞り込み結果）`;
+    $('downloadExportImageBtn').disabled=!state.exportRecords.length;
+    $('exportOperationModeArea').classList.toggle('hidden',kind!=='operations');
+    $('exportHint').textContent=kind==='master'
+      ? '左側に編成名・所属車両区、右側に車両構成を表示します。車両数に応じて画像の横幅が変わります。'
+      : '左側に運用編成名・列車名・走行路線、右側に編成構成または車両構成を表示します。車両単位ではマスター編成ごとに枠で区切ります。';
+    renderExportPreview();
+    $('imageExportDialog').showModal();
+  }
+  function exportOperationMode() { return $('exportOperationMode').value; }
+  function exportMetaLines(record) {
+    if(state.exportKind==='master') return [record.name,record.depot||'所属車両区未設定'];
+    return [record.name,record.trainName||'列車名未設定',record.lines.length?record.lines.join(' ／ '):'走行路線未設定'];
+  }
+  function exportCarHtml(car,i) {
+    return `<div class="export-car"><small>${String(i+1).padStart(2,'0')}</small><strong>${esc(car.format||'形式未設定')}</strong><span>${esc(car.number||'番号未登録')}</span></div>`;
+  }
+  function renderExportPreview() {
+    const kind=state.exportKind, list=state.exportRecords;
+    if(!list.length){$('exportPreview').innerHTML='<div class="export-empty">現在の検索・絞り込み条件に一致するデータがありません。</div>';return;}
+    const rows=list.map(item=>{
+      if(kind==='master'){
+        const consist=item.cars.map(exportCarHtml).join('');
+        return `<div class="export-row"><div class="export-meta"><strong>${esc(item.name)}</strong><span>${esc(item.depot||'所属車両区未設定')}</span><small>${item.cars.length}両編成</small></div><div class="export-consist">${consist||'<span class="export-no-cars">車両未登録</span>'}</div></div>`;
+      }
+      const meta=`<div class="export-meta"><strong>${esc(item.name)}</strong><span>${esc(item.trainName||'列車名未設定')}</span><small>${esc(item.lines.join(' ／ ')||'走行路線未設定')}</small></div>`;
+      const groups=item.formations.map((unit,i)=>{
+        const f=getFormation(unit.formationId);
+        if(!f) return `<div class="export-unit missing"><div class="export-unit-head">${i+1}編成目：参照先なし</div></div>`;
+        if(exportOperationMode()==='formations') return `<div class="export-unit formation-mode" style="width:${Math.max(150,45*f.cars.length+55)}px"><div class="export-unit-head">${i+1}編成目</div><strong>${esc(f.name)}</strong><span>${esc(f.depot||'車両区未設定')}</span><b>${f.cars.length}両</b></div>`;
+        return `<div class="export-unit car-mode"><div class="export-unit-head">${i+1}編成目：${esc(f.name)}</div><div class="export-unit-cars">${f.cars.map(exportCarHtml).join('')||'<span class="export-no-cars">車両未登録</span>'}</div></div>`;
+      }).join('<span class="export-coupler">＋</span>');
+      return `<div class="export-row">${meta}<div class="export-consist">${groups||'<span class="export-no-cars">編成未登録</span>'}</div></div>`;
+    }).join('');
+    $('exportPreview').innerHTML=`<div class="export-sheet"><div class="export-sheet-heading"><div><h3>${kind==='master'?'編成マスター一覧':'運用編成一覧'}</h3><p>RAIL FORMATION MANAGER　／　${new Date().toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}</p>${state.db.datasetName?`<p class=\"export-dataset-name\">${esc(state.db.datasetName)}</p>`:''}</div><span>${list.length}件</span></div><div class="export-rows">${rows}</div></div>`;
+  }
+  function roundedRect(ctx,x,y,w,h,r,fill,stroke,lineWidth=1) {
+    const radius=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+radius,y);ctx.arcTo(x+w,y,x+w,y+h,radius);ctx.arcTo(x+w,y+h,x,y+h,radius);ctx.arcTo(x,y+h,x,y,radius);ctx.arcTo(x,y,x+w,y,radius);ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lineWidth;ctx.stroke();}
+  }
+  function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=2) {
+    let line='',lines=[];
+    for(const ch of String(text||'')){
+      const test=line+ch;
+      if(line && ctx.measureText(test).width>maxWidth){lines.push(line);line=ch;}else line=test;
+    }
+    if(line)lines.push(line);
+    if(lines.length>maxLines){lines=lines.slice(0,maxLines);let last=lines[maxLines-1];while(last.length && ctx.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);lines[maxLines-1]=last+'…';}
+    lines.forEach((t,i)=>ctx.fillText(t,x,y+i*lineHeight));
+  }
+  function exportLayoutMetrics() {
+    const kind=state.exportKind, mode=exportOperationMode(), list=state.exportRecords;
+    const metaW=252,pad=34, rowH=122;
+    let maxConsist=120;
+    list.forEach(item=>{
+      let w=0;
+      if(kind==='master') w=item.cars.length?item.cars.length*112-6:120;
+      else item.formations.forEach((u,i)=>{
+        const f=getFormation(u.formationId);if(!f){w+=150;return;}
+        const n=f.cars.length;
+        w+=mode==='formations'?Math.max(150,45*n+55):Math.max(160,n*112+20);
+        if(i)w+=16;
+      });
+      maxConsist=Math.max(maxConsist,w);
+    });
+    const headerH=state.db.datasetName?88:68;
+    return {width:pad*2+metaW+24+maxConsist,height:pad+headerH+list.length*rowH+pad,metaW,pad,rowH,contentW:maxConsist,headerH};
+  }
+  function drawExportCanvas() {
+    const kind=state.exportKind,list=state.exportRecords,mode=exportOperationMode();
+    if(!list.length)throw new Error('出力するデータがありません。');
+    const m=exportLayoutMetrics();
+    const scale=Math.min(2,32767/m.width,32767/m.height,Math.sqrt(120000000/(m.width*m.height)));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.floor(m.width*scale));canvas.height=Math.max(1,Math.floor(m.height*scale));
+    const ctx=canvas.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,m.width,m.height);
+    ctx.fillStyle='#142c40';ctx.font='bold 22px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(kind==='master'?'編成マスター一覧':'運用編成一覧',m.pad,m.pad+24);
+    ctx.fillStyle='#718293';ctx.font='11px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(`RAIL FORMATION MANAGER  /  ${new Date().toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}  /  ${list.length}件`,m.pad,m.pad+45);
+    if(state.db.datasetName){ctx.fillStyle='#42647b';ctx.font='bold 12px \"Noto Sans JP\",Meiryo,sans-serif';ctx.fillText(state.db.datasetName,m.pad,m.pad+68);}
+    const xMeta=m.pad,yStart=m.pad+m.headerH,xConsist=xMeta+m.metaW+24;
+    list.forEach((item,index)=>{
+      const y=yStart+index*m.rowH;
+      roundedRect(ctx,xMeta,y,m.metaW,m.rowH-12,10,'#f2f5f7','#d8e1e8',1);
+      ctx.fillStyle='#263e52';ctx.font='bold 15px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,item.name,xMeta+14,y+27,m.metaW-28,20,2);
+      ctx.fillStyle='#607486';ctx.font='11px "Noto Sans JP",Meiryo,sans-serif';
+      if(kind==='master'){
+        wrapCanvasText(ctx,item.depot||'所属車両区未設定',xMeta+14,y+72,m.metaW-28,16,2);
+        ctx.fillStyle='#2a719d';ctx.font='bold 10px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(`${item.cars.length}両編成`,xMeta+14,y+101);
+      }else{
+        wrapCanvasText(ctx,item.trainName||'列車名未設定',xMeta+14,y+57,m.metaW-28,15,1);
+        ctx.fillStyle='#607486';ctx.font='10px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,item.lines.length?item.lines.join(' ／ '):'走行路線未設定',xMeta+14,y+78,m.metaW-28,14,2);
+        ctx.fillStyle='#2a719d';ctx.font='bold 10px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(`${totalOperationCars(item)}両`,xMeta+14,y+105);
+      }
+      const baseY=y+18;ctx.strokeStyle='#b9c8d3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xConsist,baseY+51);ctx.lineTo(xConsist+m.contentW,baseY+51);ctx.stroke();
+      let x=xConsist;
+      const drawCar=(car,i,xx,yy,w=104)=>{
+        roundedRect(ctx,xx,yy,w,64,7,'#f7fafb','#a9bac7',1.2);
+        ctx.fillStyle='#94a5b2';ctx.font='9px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(String(i+1).padStart(2,'0'),xx+7,yy+13);
+        ctx.fillStyle='#304b60';ctx.font='bold 11px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,car.format||'形式未設定',xx+7,yy+32,w-14,13,2);
+        ctx.fillStyle='#748694';ctx.font='9px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,car.number||'番号未登録',xx+7,yy+54,w-14,11,1);
+      };
+      if(kind==='master'){
+        item.cars.forEach((car,i)=>{drawCar(car,i,x,baseY+19,106);x+=112;});
+      }else{
+        item.formations.forEach((unit,ui)=>{
+          const f=getFormation(unit.formationId);if(!f){roundedRect(ctx,x,baseY+5,145,85,7,'#fff8f0','#d9b18a',1.5);ctx.fillStyle='#8c633e';ctx.font='bold 11px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText('参照先なし',x+10,baseY+30);x+=155;return;}
+          if(mode==='formations'){
+            const groupW=Math.max(150,45*f.cars.length+55);
+            roundedRect(ctx,x,baseY+5,groupW,85,8,'#eef6f4','#7daea6',2);
+            ctx.fillStyle='#28776f';ctx.font='bold 10px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(`${ui+1}編成目`,x+10,baseY+22);
+            ctx.fillStyle='#244e4a';ctx.font='bold 12px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,f.name,x+10,baseY+43,groupW-20,14,1);
+            ctx.fillStyle='#68827e';ctx.font='9px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(`${f.cars.length}両 ／ ${f.depot||'車両区未設定'}`,x+10,baseY+69);
+            const tinyW=Math.min(36,(groupW-20)/Math.max(1,f.cars.length));
+            f.cars.forEach((car,i)=>{roundedRect(ctx,x+10+i*tinyW,baseY+75,Math.max(5,tinyW-2),8,2,'#9bc5bd',null);});
+            x+=groupW+10;
+          }else{
+            const groupW=Math.max(160,f.cars.length*112+16);
+            roundedRect(ctx,x,baseY+1,groupW,94,7,'#f1f7f6','#5e9b91',2.5);
+            ctx.fillStyle='#286c66';ctx.font='bold 10px "Noto Sans JP",Meiryo,sans-serif';wrapCanvasText(ctx,`${ui+1}編成目：${f.name}`,x+8,baseY+15,groupW-16,12,1);
+            f.cars.forEach((car,i)=>drawCar(car,i,x+8+i*112,baseY+24,106));
+            x+=groupW+10;
+          }
+          if(ui<item.formations.length-1){ctx.fillStyle='#8295a3';ctx.font='bold 15px sans-serif';ctx.fillText('＋',x-4,baseY+52);}
+        });
+      }
+      ctx.fillStyle='#a3afb8';ctx.font='9px "Noto Sans JP",Meiryo,sans-serif';ctx.fillText(String(index+1).padStart(3,'0'),xMeta-22,y+20);
+    });
+    return canvas;
+  }
+  async function downloadExportImage() {
+    try{
+      const canvas=drawExportCanvas();const format=$('exportImageFormat').value;const mime=format==='jpeg'?'image/jpeg':'image/png';
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,mime,0.94));
+      if(!blob)throw new Error('画像ファイルを生成できませんでした。');
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');
+      const stamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+      a.href=url;a.download=`rail_${state.exportKind==='master'?'formations':'operations'}_${stamp}.${format==='jpeg'?'jpg':'png'}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      showToast(`${format.toUpperCase()}画像を出力しました。`);
+    }catch(err){console.error(err);alert(`画像を出力できませんでした。
+${err.message||err}
+件数を絞り込んで再度お試しください。`);}
+  }
+  $('exportOperationMode').addEventListener('change',()=>{renderExportPreview();});
+  $('downloadExportImageBtn').addEventListener('click',downloadExportImage);
+
+  // CSV一括登録：RFC 4180形式の引用符・改行、UTF-8/Shift_JISを扱う。
+  const CSV_MASTER_HEADERS = ['編成ID','編成名','所属車両区','備考','車両順序','車両形式','車両番号'];
+  const CSV_OPERATION_HEADERS = ['運用ID','運用名','列車名','走行路線','備考','連結順序','編成ID'];
+
+  function downloadTextFile(filename, text, mime='text/csv;charset=utf-8') {
+    const blob = new Blob(['\uFEFF', text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function csvCell(value) {
+    const v = String(value ?? '');
+    return /[",\r\n]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v;
+  }
+  function csvRowsText(rows) { return rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n'; }
+  function exportMasterCsv() {
+    const rows=[CSV_MASTER_HEADERS];
+    state.db.formations.forEach(f=>{
+      f.cars.forEach((car,i)=>rows.push([f.externalId||f.id,f.name,f.depot,f.notes,i+1,car.format,car.number]));
+    });
+    downloadTextFile(`rail_formation_masters_${new Date().toISOString().slice(0,10)}.csv`,csvRowsText(rows));
+    showToast('編成マスターCSVを出力しました。');
+  }
+  function exportOperationCsv() {
+    const rows=[CSV_OPERATION_HEADERS];
+    state.db.operations.forEach(o=>{
+      o.formations.forEach((unit,i)=>{const f=getFormation(unit.formationId);rows.push([o.externalId||o.id,o.name,o.trainName,o.lines.join('|'),o.notes,i+1,f?(f.externalId||f.id):unit.formationId]);});
+    });
+    downloadTextFile(`rail_formation_operations_${new Date().toISOString().slice(0,10)}.csv`,csvRowsText(rows));
+    showToast('運用編成CSVを出力しました。');
+  }
+  $('csvExportOpenBtn').addEventListener('click',()=>$('csvExportDialog').showModal());
+  $('exportMasterCsvBtn').addEventListener('click',exportMasterCsv);
+  $('exportOperationCsvBtn').addEventListener('click',exportOperationCsv);
+  function downloadCsvTemplate(kind, example=false) {
+    if (kind === 'master') {
+      const rows = [CSV_MASTER_HEADERS];
+      if (example) rows.push(
+        ['MASTER-A-101F','通勤形A 101F','車両区A','記入例',1,'クハA','101'],
+        ['MASTER-A-101F','通勤形A 101F','車両区A','記入例',2,'モハA','102'],
+        ['MASTER-B-201F','通勤形B 201F','車両区B','記入例',1,'クハB','201'],
+        ['MASTER-B-201F','通勤形B 201F','車両区B','記入例',2,'モハB','202']
+      );
+      downloadTextFile(example ? '編成マスター記入例.csv' : '編成マスターテンプレート.csv', csvRowsText(rows));
+    } else {
+      const rows = [CSV_OPERATION_HEADERS];
+      if (example) rows.push(
+        ['OP-001','朝ラッシュ時 4両編成','快速','路線A|路線B','記入例',1,'MASTER-A-101F'],
+        ['OP-001','朝ラッシュ時 4両編成','快速','路線A|路線B','記入例',2,'MASTER-B-201F']
+      );
+      downloadTextFile(example ? '運用編成記入例.csv' : '運用編成テンプレート.csv', csvRowsText(rows));
+    }
+    showToast(example ? 'CSVの記入例をダウンロードしました。' : 'CSVテンプレートをダウンロードしました。');
+  }
+  function parseCsvText(text) {
+    const source = String(text || '').replace(/^\uFEFF/, '');
+    const rows = []; let row = []; let field = ''; let quoted = false;
+    let line = 1; let rowLine = 1; let justEndedRow = false;
+    for (let i=0; i<source.length; i++) {
+      const ch = source[i];
+      if (quoted) {
+        if (ch === '"' && source[i+1] === '"') { field += '"'; i++; }
+        else if (ch === '"') quoted = false;
+        else { field += ch; if (ch === '\n') line++; else if (ch === '\r' && source[i+1] !== '\n') line++; }
+        continue;
+      }
+      if (ch === '"' && field === '') { quoted = true; justEndedRow = false; continue; }
+      if (ch === ',') { row.push(field); field=''; justEndedRow=false; continue; }
+      if (ch === '\r' || ch === '\n') {
+        row.push(field); field='';
+        if (row.some(value => String(value).trim() !== '')) rows.push({ values: row, line: rowLine });
+        row=[]; justEndedRow=true;
+        if (ch === '\r' && source[i+1] === '\n') i++;
+        line++; rowLine=line; continue;
+      }
+      field += ch; justEndedRow=false;
+    }
+    if (quoted) throw new Error(`CSV ${rowLine}行目付近：引用符（\"）が閉じられていません。`);
+    if (field !== '' || row.length || !justEndedRow) {
+      row.push(field);
+      if (row.some(value => String(value).trim() !== '')) rows.push({ values: row, line: rowLine });
+    }
+    if (!rows.length) throw new Error('CSVにデータがありません。');
+    return rows;
+  }
+  async function decodeCsvFile(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      return { text: decoder.decode(bytes), encoding: 'UTF-8' };
+    } catch (utf8Error) {
+      try {
+        const decoder = new TextDecoder('shift_jis', { fatal: true });
+        return { text: decoder.decode(bytes), encoding: 'Shift_JIS（CP932互換）' };
+      } catch (sjisError) {
+        throw new Error('文字コードを判定できませんでした。UTF-8またはShift_JISで保存してください。');
+      }
+    }
+  }
+  function csvHeaderIndex(headerRow, required, errors) {
+    const headers = headerRow.values.map(v => String(v).trim());
+    const duplicates = headers.filter((v,i) => v && headers.indexOf(v) !== i);
+    if (duplicates.length) errors.push(`CSV 1行目：列名が重複しています（${[...new Set(duplicates)].join('、')}）。`);
+    const index = {};
+    required.forEach(name => {
+      const i = headers.indexOf(name);
+      if (i < 0) errors.push(`CSV 1行目：必須列「${name}」がありません。`);
+      else index[name] = i;
+    });
+    return index;
+  }
+  function getCsvValue(row, index, name) {
+    const i = index[name]; return i === undefined ? '' : String(row.values[i] ?? '').trim();
+  }
+  function checkSequentialOrder(items, orderFieldName, errors, label) {
+    const seen = new Map();
+    items.forEach(item => {
+      const n = item.order;
+      if (!Number.isInteger(n) || n < 1) errors.push(`CSV ${item.line}行目：${label}は1以上の整数で入力してください。`);
+      else if (seen.has(n)) errors.push(`CSV ${item.line}行目：${label}「${n}」が重複しています（CSV ${seen.get(n)}行目）。`);
+      else seen.set(n, item.line);
+    });
+    if (seen.size && [...seen.keys()].sort((a,b)=>a-b).some((n,i)=>n !== i+1)) {
+      const lines = items.map(x=>x.line).join('、');
+      errors.push(`CSV ${lines}行目：${label}は1から始まる連番にしてください（欠番があります）。`);
+    }
+  }
+  function parseMasterImport(rows) {
+    const errors=[]; const index=csvHeaderIndex(rows[0],CSV_MASTER_HEADERS,errors); const groups=new Map();
+    rows.slice(1).forEach(row=>{
+      const id=getCsvValue(row,index,'編成ID');
+      const name=getCsvValue(row,index,'編成名');
+      const depot=getCsvValue(row,index,'所属車両区');
+      const notes=getCsvValue(row,index,'備考');
+      const orderText=getCsvValue(row,index,'車両順序');
+      const format=getCsvValue(row,index,'車両形式');
+      const number=getCsvValue(row,index,'車両番号');
+      if(!id) errors.push(`CSV ${row.line}行目：編成IDが空欄です。`);
+      if(!name) errors.push(`CSV ${row.line}行目：編成名が空欄です。`);
+      if(!format) errors.push(`CSV ${row.line}行目：車両形式が空欄です。`);
+      if(id.length>100) errors.push(`CSV ${row.line}行目：編成IDは100文字以内にしてください。`);
+      if(!/^\d+$/.test(orderText)) errors.push(`CSV ${row.line}行目：車両順序は1以上の整数で入力してください。`);
+      if(!id || !name || !format || !/^\d+$/.test(orderText)) return;
+      if(!groups.has(id)) groups.set(id,{externalId:id,name,depot,notes,cars:[],line:row.line});
+      const group=groups.get(id);
+      if(group.name!==name || group.depot!==depot || group.notes!==notes) errors.push(`CSV ${row.line}行目：編成ID「${id}」の編成名・所属車両区・備考は、同じIDの全行で同一にしてください。`);
+      group.cars.push({order:Number(orderText),format,number,line:row.line});
+    });
+    groups.forEach(group=>{
+      if(!group.cars.length) errors.push(`CSV ${group.line}行目：編成ID「${group.externalId}」に車両行がありません。`);
+      checkSequentialOrder(group.cars,'車両順序',errors,'車両順序');
+      group.cars.sort((a,b)=>a.order-b.order);
+      group.cars=group.cars.map(c=>({format:c.format,number:c.number}));
+    });
+    if(!groups.size && !errors.length) errors.push('CSVに編成データがありません。');
+    return {kind:'master',groups:[...groups.values()],errors};
+  }
+  function parseOperationImport(rows) {
+    const errors=[]; const index=csvHeaderIndex(rows[0],CSV_OPERATION_HEADERS,errors); const groups=new Map();
+    rows.slice(1).forEach(row=>{
+      const id=getCsvValue(row,index,'運用ID');
+      const name=getCsvValue(row,index,'運用名');
+      const trainName=getCsvValue(row,index,'列車名');
+      const linesText=getCsvValue(row,index,'走行路線');
+      const notes=getCsvValue(row,index,'備考');
+      const orderText=getCsvValue(row,index,'連結順序');
+      const formationRef=getCsvValue(row,index,'編成ID');
+      if(!id) errors.push(`CSV ${row.line}行目：運用IDが空欄です。`);
+      if(!name) errors.push(`CSV ${row.line}行目：運用名が空欄です。`);
+      if(!formationRef) errors.push(`CSV ${row.line}行目：編成IDが空欄です。`);
+      if(!/^\d+$/.test(orderText)) errors.push(`CSV ${row.line}行目：連結順序は1以上の整数で入力してください。`);
+      if(!id || !name || !formationRef || !/^\d+$/.test(orderText)) return;
+      if(!groups.has(id)) groups.set(id,{externalId:id,name,trainName,linesText,notes,formations:[],line:row.line});
+      const group=groups.get(id);
+      if(group.name!==name || group.trainName!==trainName || group.linesText!==linesText || group.notes!==notes) errors.push(`CSV ${row.line}行目：運用ID「${id}」の運用名・列車名・走行路線・備考は、同じIDの全行で同一にしてください。`);
+      group.formations.push({order:Number(orderText),formationRef,line:row.line});
+    });
+    const resolveFormation = ref => {
+      const exact = state.db.formations.filter(f=>f.id===ref || f.externalId===ref);
+      if(exact.length===1) return exact[0];
+      if(exact.length>1) return null;
+      const byName = state.db.formations.filter(f=>f.name===ref);
+      return byName.length===1 ? byName[0] : null;
+    };
+    groups.forEach(group=>{
+      checkSequentialOrder(group.formations,'連結順序',errors,'連結順序');
+      group.formations.sort((a,b)=>a.order-b.order);
+      group.formations.forEach(item=>{
+        if(!resolveFormation(item.formationRef)) errors.push(`CSV ${item.line}行目：編成ID「${item.formationRef}」に一致する編成マスターがありません（編成ID・CSV ID・一意の編成名を確認してください）。`);
+      });
+      group.lines=group.linesText ? group.linesText.split(/[|｜、]/).map(x=>x.trim()).filter(Boolean) : [];
+    });
+    if(!groups.size && !errors.length) errors.push('CSVに運用編成データがありません。');
+    return {kind:'operations',groups:[...groups.values()],errors};
+  }
+  function previewCsvImport(result, filename, encoding) {
+    state.csvImport={...result,filename,encoding};
+    $('csvRegisterBtn').disabled=!!result.errors.length || !result.groups.length;
+    const summary=`<div class="csv-summary"><span>${result.groups.length}件の${result.kind==='master'?'編成マスター':'運用編成'}</span><span>${result.kind==='master'?result.groups.reduce((n,g)=>n+g.cars.length,0):result.groups.reduce((n,g)=>n+g.formations.length,0)}両・編成構成行</span><span>${esc(encoding)}</span></div>`;
+    const errors=result.errors.length?`<div class="csv-errors"><h3>検証エラー ${result.errors.length}件：修正して再読み込みしてください</h3><ul>${result.errors.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
+    const previewRows=result.groups.slice(0,12).map(g=> result.kind==='master'
+      ? `<tr><td>${esc(g.externalId)}</td><td>${esc(g.name)}</td><td>${g.cars.length}両</td><td>${esc(g.depot||'—')}</td></tr>`
+      : `<tr><td>${esc(g.externalId)}</td><td>${esc(g.name)}</td><td>${esc(g.trainName||'—')}</td><td>${g.formations.length}編成</td><td>${esc(g.lines.join(' / ')||'—')}</td></tr>`
+    ).join('');
+    const headers=result.kind==='master'?'<th>編成ID</th><th>編成名</th><th>車両数</th><th>所属車両区</th>':'<th>運用ID</th><th>運用名</th><th>列車名</th><th>構成</th><th>走行路線</th>';
+    $('csvValidationResult').innerHTML=summary+errors+`<div class="csv-preview"><div class="csv-preview-head">登録プレビュー（先頭12件）</div>${previewRows?`<div class="csv-preview-scroll"><table><thead><tr>${headers}</tr></thead><tbody>${previewRows}</tbody></table></div>`:'<div class="csv-empty">プレビュー可能なデータがありません。</div>'}</div>`;
+    $('csvStatus').textContent=`${filename} を ${encoding} として読み込みました。${result.errors.length?'エラーを修正してください。':'検証に成功しました。内容を確認して登録できます。'}`;
+  }
+  function resetCsvImport() {
+    state.csvImport=null; $('csvFileInput').value=''; $('csvValidationResult').innerHTML='';
+    $('csvStatus').textContent='CSVファイルを選択すると、検証してプレビューを表示します。';
+    $('csvRegisterBtn').disabled=true;
+  }
+  function updateCsvHelp() {
+    const kind=$('csvImportType').value;
+    $('csvFormatHelp').textContent=kind==='master'
+      ? '1両につき1行です。同じ編成IDの車両行をまとめて1編成として登録します。編成ID・編成名・車両順序・車両形式は必須で、車両順序は1からの連番にしてください。'
+      : '1つのマスター編成につき1行です。同じ運用IDの行をまとめて1件の運用編成として登録します。編成IDはマスターの内部ID・CSV ID、または一意の編成名を指定してください。連結順序は1からの連番、走行路線は「|」で区切ります。';
+    resetCsvImport();
+  }
+  $('csvImportOpenBtn').addEventListener('click',()=>{$('csvImportDialog').showModal();updateCsvHelp();});
+  $('csvImportType').addEventListener('change',updateCsvHelp);
+  $('downloadMasterTemplate').addEventListener('click',()=>downloadCsvTemplate('master'));
+  $('downloadMasterExample').addEventListener('click',()=>downloadCsvTemplate('master',true));
+  $('downloadOperationTemplate').addEventListener('click',()=>downloadCsvTemplate('operations'));
+  $('downloadOperationExample').addEventListener('click',()=>downloadCsvTemplate('operations',true));
+  $('csvDuplicateMode').addEventListener('change',()=>{ if(state.csvImport) $('csvStatus').textContent='重複時の処理を変更しました。登録内容を確認してください。'; });
+  $('csvFileInput').addEventListener('change',async e=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    $('csvRegisterBtn').disabled=true; $('csvValidationResult').innerHTML=''; $('csvStatus').textContent='CSVを読み込み、内容を検証しています…';
+    try{
+      const decoded=await decodeCsvFile(file); const rows=parseCsvText(decoded.text);
+      const result=$('csvImportType').value==='master'?parseMasterImport(rows):parseOperationImport(rows);
+      previewCsvImport(result,file.name,decoded.encoding);
+    }catch(err){
+      state.csvImport=null; $('csvRegisterBtn').disabled=true;
+      $('csvStatus').textContent='CSVを読み込めませんでした。';
+      $('csvValidationResult').innerHTML=`<div class="csv-errors"><h3>読み込みエラー</h3><ul><li>${esc(err.message||String(err))}</li></ul></div>`;
+    }
+  });
+  $('csvRegisterBtn').addEventListener('click',()=>{
+    const incoming=state.csvImport; if(!incoming || incoming.errors.length || !incoming.groups.length)return;
+    const mode=$('csvDuplicateMode').value; const now=new Date().toISOString();
+    let added=0,updated=0,skipped=0;
+    if(incoming.kind==='master'){
+      const next=[...state.db.formations];
+      incoming.groups.forEach(g=>{
+        const existing=next.find(f=>f.externalId===g.externalId || f.id===g.externalId);
+        if(existing && mode==='skip'){skipped++;return;}
+        const item={id:existing?.id||uid('formation'),externalId:g.externalId,name:g.name,depot:g.depot,notes:g.notes,cars:g.cars.map(c=>({id:uid('car'),format:c.format,number:c.number})),createdAt:existing?.createdAt||now,updatedAt:now};
+        if(existing){next[next.findIndex(f=>f.id===existing.id)]=item;updated++;}else{next.push(item);added++;}
+      });
+      state.db.formations=next;
+    } else {
+      const next=[...state.db.operations];
+      incoming.groups.forEach(g=>{
+        const existing=next.find(o=>o.externalId===g.externalId || o.id===g.externalId);
+        if(existing && mode==='skip'){skipped++;return;}
+        const linked=g.formations.map(item=>{
+          const ref=item.formationRef;
+          let f=state.db.formations.find(x=>x.id===ref || x.externalId===ref);
+          if(!f){const matches=state.db.formations.filter(x=>x.name===ref); if(matches.length===1)f=matches[0];}
+          return {instanceId:uid('unit'),formationId:f.id};
+        });
+        const item={id:existing?.id||uid('operation'),externalId:g.externalId,name:g.name,trainName:g.trainName,lines:g.lines,notes:g.notes,formations:linked,createdAt:existing?.createdAt||now,updatedAt:now};
+        if(existing){next[next.findIndex(o=>o.id===existing.id)]=item;updated++;}else{next.push(item);added++;}
+      });
+      state.db.operations=next;
+    }
+    $('csvImportDialog').close(); resetCsvImport();
+    commitAndRender(`CSV登録完了：新規 ${added}件、更新 ${updated}件、スキップ ${skipped}件。`);
+  });
+
+  async function openDatabaseFile() {
+    if(window.showOpenFilePicker){
+      try{
+        const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'編成データベース（JSON）',accept:{'application/json':['.json'],'text/plain':['.txt']}}]});
+        const file=await handle.getFile(); const parsed=JSON.parse(await file.text()); state.db=normalizeDatabase(parsed); state.fileHandle=handle; saveLocal(); render(); $('dbStatus').textContent=`接続中：${file.name}`; showToast('データベースを読み込みました。'); return;
+      }catch(err){if(err.name==='AbortError')return; console.error(err); alert('データベースを開けませんでした。JSON形式のファイルか確認してください。');return;}
+    }
+    $('importFile').click();
+  }
+  async function saveDatabaseFile() {
+    const text=dbText(); saveLocal();
+    try{
+      if(state.fileHandle){const writable=await state.fileHandle.createWritable(); await writable.write(text); await writable.close(); $('dbStatus').textContent='データベースファイルに保存済み'; showToast('データベースファイルを上書き保存しました。'); return;}
+      if(window.showSaveFilePicker){
+        const handle=await window.showSaveFilePicker({suggestedName:'rail_formation_database.json',types:[{description:'JSONデータベース',accept:{'application/json':['.json']}}]});
+        const writable=await handle.createWritable(); await writable.write(text); await writable.close(); state.fileHandle=handle; $('dbStatus').textContent='データベースファイルに保存済み'; showToast('データベースファイルを保存しました。'); return;
+      }
+    }catch(err){if(err.name==='AbortError')return;console.error(err);showToast('ファイル保存に失敗しました。ダウンロードで保存します。');}
+    downloadDatabase(text);
+  }
+  function downloadDatabase(text=dbText()) {
+    const blob=new Blob([text],{type:'application/json;charset=utf-8'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='rail_formation_database.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    $('dbStatus').textContent='ブラウザに自動保存中'; showToast('JSONデータベースをダウンロードしました。');
+  }
+  $('openDbBtn').addEventListener('click',openDatabaseFile);
+  $('saveDbBtn').addEventListener('click',saveDatabaseFile);
+  $('importFile').addEventListener('change',async e=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    try{state.db=normalizeDatabase(JSON.parse(await file.text()));state.fileHandle=null;saveLocal();render();showToast('データベースを読み込みました。');}
+    catch(err){alert('ファイルを読み込めませんでした。JSON形式のデータベースを選択してください。');console.error(err);}
+    e.target.value='';
+  });
+  window.addEventListener('storage',e=>{
+    if(e.key===DB_KEY && e.newValue){try{state.db=normalizeDatabase(JSON.parse(e.newValue));render();}catch(err){console.error(err);}}
+  });
+
+  loadLocal(); loadUiPreferences(); render();
+})();
+</script>
+</body>
+</html>
