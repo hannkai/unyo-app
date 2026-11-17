@@ -1,9 +1,10 @@
 鉄道編成管理アプリ（Rail Formation Manager）
 
 ■ アプリの起動はこちら<br>
-<a href="rail_formation_manager_v1_2.html">最新版アプリ起動</a><br>
+<a href="rail_formation_manager_v1_3.html">最新版アプリ起動</a><br>
 ○以前のバージョン<br>
-<a href="rail_formation_manager.html">1.1　アプリ起動</a>
+<a href="rail_formation_manager_v1_2.html">v1.2　アプリ起動</a><br><br>
+<a href="rail_formation_manager.html">v1.1　アプリ起動</a>
 
 ■ ファイル
 - rail_formation_manager.html : アプリ本体。ブラウザで開いて使用します。
@@ -59,7 +60,8 @@
 <a href="運用編成記入例.csv" download>運用編成記入例</a>
 
 ■アプリのダウンロード(zipファイル)<br>
-<a href="rail_formation_manager_package_v1_2.zip" download>最新版ver1.2　アプリダウンロード</a><br>
+<a href="rail_formation_manager_package_v1_3.zip" download>最新版ver1.3　アプリダウンロード</a><br>
 
 〇以前のバージョン<br>
+<a href="rail_formation_manager_package_v1_2.zip" download>ver1.2　アプリダウンロード</a><br>
 <a href="rail_formation_manager_package.zip" download>ver1.1　アプリダウンロード</a>
